@@ -1,16 +1,68 @@
-# React + Vite
+# Omnicura — AI-Powered Healthcare Companion
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Omnicura Hero](/public/hero.png)
 
-Currently, two official plugins are available:
+Omnicura is a modern, AI-first healthcare platform designed to bridge the gap between people and quality health guidance. Built with a focus on trust, simplicity, and speed, it serves as an intelligent assistant for symptoms, professional care discovery, and health management.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ✨ Key Features
 
-## React Compiler
+- **🧠 AI Symptom Checker**: An interactive, chat-based interface that assesses symptoms and provides data-backed urgency guidance (Low, Medium, or High).
+- **📊 Health Dashboard**: Visualize your health journey with dynamic charts tracking markers like heart rate, sleep, and activity.
+- **👨‍⚕️ Doctor Finder**: A streamlined directory to find verified specialists nearby with integrated search and smart filtering.
+- **💊 Medicine Info**: A quick lookup portal for medication safe-use, dosages, and common side effects.
+- **🚨 Emergency Mode**: A high-priority interface designed for critical situations, featuring one-tap emergency calls and hospital locator.
+- **📱 Fully Responsive**: A mobile-first design that looks stunning on desktops, tablets, and phones.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Technology Stack
 
-## Expanding the ESLint configuration
+- **Frontend**: React 19, Vite 8
+- **Styling**: Vanilla CSS (Modern CSS variables & Grid/Flexbox)
+- **Animations**: Framer Motion for premium micro-interactions
+- **Charts**: Recharts for data visualization
+- **Icons**: Lucide React
+- **Router**: React Router v7
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js (v18 or higher)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/thatshedesigner/OmniCura.git
+   cd OmniCura
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Build for production:
+   ```bash
+   npm run build
+   ```
+
+## 🎨 Design Philosophy
+
+Omnicura follows a minimalist, trust-centric design language inspired by Apple and Notion.
+- **Typography**: Inter & Outfit for maximum readability and a modern feel.
+- **Color Palette**: Calm blues, trustworthy greens, and soft grays to reduce user anxiety.
+- **Experience**: Glassmorphic elements, subtle entrance animations, and high-contrast call-to-actions.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+Built with ❤️ for a healthier future.
