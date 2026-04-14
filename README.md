@@ -1,7 +1,5 @@
 # Omnicura — AI-Powered Healthcare Companion
 
-![Omnicura Hero](/public/hero.png)
-
 Omnicura is a modern, AI-first healthcare platform designed to bridge the gap between people and quality health guidance. Built with a focus on trust, simplicity, and speed, it serves as an intelligent assistant for symptoms, professional care discovery, and health management.
 
 ## ✨ Key Features
