@@ -1,0 +1,324 @@
+import React, { useEffect, useState } from 'react'
+import Navbar from './components/Navbar'
+import SearchLanding from './components/SearchLanding'
+import AgentPipeline from './components/AgentPipeline'
+import ResultsPage from './components/ResultsPage'
+import ModeSwitcher from './components/ModeSwitcher'
+import UploadZone from './components/UploadZone'
+import PrescriptionPipeline from './components/PrescriptionPipeline'
+import ExtractedDrugsTable from './components/ExtractedDrugsTable'
+import InteractionCard from './components/InteractionCard'
+import ClinicalSummary from './components/ClinicalSummary'
+import RiskScoreCircle from './components/RiskScoreCircle'
+import { mock } from './data/mockData'
+import { AlertTriangle } from 'lucide-react'
+import { SAMPLE_EXTRACT, sampleBase64, INTERACTION_DB } from './data/prescriptionMock'
+
+export default function App() {
+  const [query, setQuery] = useState('')
+  const [phase, setPhase] = useState('idle') // idle | analyzing | results
+  const [agentsCompleted, setAgentsCompleted] = useState(0)
+  const [showToast, setShowToast] = useState(false)
+  // Prescription analyzer states
+  const [mode, setMode] = useState('repurposing') // 'repurposing' | 'prescription'
+  const [prescriptionPhase, setPrescriptionPhase] = useState('upload') // upload | analyzing | results
+  const [uploadedImage, setUploadedImage] = useState(null)
+  const [ocrStep, setOcrStep] = useState(0)
+  const [extractedDrugs, setExtractedDrugs] = useState([])
+  const [interactions, setInteractions] = useState([])
+  const [expandedInteraction, setExpandedInteraction] = useState(null)
+  const [prescriptionWarning, setPrescriptionWarning] = useState(null)
+
+  useEffect(() => {
+    let interval
+    if (phase === 'analyzing') {
+      interval = setInterval(() => {
+        setAgentsCompleted((c) => {
+          if (c >= 6) {
+            clearInterval(interval)
+            return 6
+          }
+          return c + 1
+        })
+      }, 1500)
+    }
+    return () => clearInterval(interval)
+  }, [phase])
+
+  useEffect(() => {
+    if (agentsCompleted === 6 && phase === 'analyzing') {
+      setTimeout(() => setPhase('results'), 800)
+    }
+  }, [agentsCompleted])
+
+  function startAnalysis() {
+    if (!query) return
+    setPhase('analyzing')
+    setAgentsCompleted(0)
+  }
+
+  function handleComplete() {
+    setPhase('results')
+  }
+
+  function handleDownload() {
+    // simple PDF blob simulation
+    const blob = new Blob([`OmniCura Report for ${mock.gene}\n\nSummary:\n${mock.summary.recommendation}`], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `OmniCura-${mock.gene}-report.pdf`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 4000)
+  }
+
+  // Prescription analyzer helpers
+  const analyzePrescription = async (base64Image, mediaType) => {
+    try {
+      const ANTHROPIC_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
+      if (!ANTHROPIC_KEY) {
+        // warn and fallback
+        setPrescriptionWarning('Anthropic API key not found. Using sample data for demonstration.')
+        return SAMPLE_EXTRACT
+      }
+
+      const body = JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: [ { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Image } }, { type: 'text', text: `You are a medical OCR and NLP system. Analyze this handwritten prescription image. Extract ALL drug names, dosages, and frequencies. Return ONLY a JSON object in this exact format:\n{ "drugs": [ { "name": "DrugName", "dosage": "Xmg", "frequency": "...", "confidence": 95 } ], "prescriber": "Dr. Name if visible or null", "date": "date if visible or null", "rawText": "full raw OCR text of prescription" } Do not include any text outside the JSON object.` } ] }]
+      })
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY },
+        body
+      })
+      const data = await response.json()
+      // find text block
+      const text = data?.content?.find?.(b => b.type === 'text')?.text || '{}'
+      const parsed = JSON.parse(text.replace(/```json|```/g, '').trim())
+      return parsed
+    } catch (e) {
+      // fallback silently to sample
+      setPrescriptionWarning('Unable to process image. Using sample data for demonstration.')
+      return SAMPLE_EXTRACT
+    }
+  }
+
+  // start analyzing when uploadedImage.toAnalyze is set (file Analyze button)
+  useEffect(() => {
+    if (uploadedImage?.toAnalyze) {
+      const ANTHROPIC_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
+      if (!ANTHROPIC_KEY) {
+        setPrescriptionWarning('Anthropic API key not found. Using sample data for demonstration.')
+      }
+      setPrescriptionPhase('analyzing')
+    }
+  }, [uploadedImage?.toAnalyze])
+
+  const findInteractions = (drugs) => {
+    const names = drugs.map(d => d.name.toLowerCase())
+    const results = []
+    for (const rule of INTERACTION_DB) {
+      const [a,b] = rule.drugs
+      if (names.includes(a) && names.includes(b) || names.includes(b) && names.includes(a)) {
+        results.push({
+          pair: `${a.charAt(0).toUpperCase()+a.slice(1)} ↔ ${b.charAt(0).toUpperCase()+b.slice(1)}`,
+          severity: rule.severity,
+          type: rule.type,
+          significance: rule.significance,
+          recommendation: rule.recommendation,
+          mechanism: rule.mechanism || 'See clinical literature for mechanism.',
+          alternatives: rule.alternatives || 'Consider alternatives per guideline.'
+        })
+      }
+    }
+    // sort by severity
+    const order = { critical: 0, severe: 1, moderate: 2, minor: 3 }
+    results.sort((x,y) => order[x.severity] - order[y.severity])
+    return results
+  }
+
+  const handlePrescriptionComplete = async () => {
+    // perform API analyze (or fallback)
+    const res = await analyzePrescription(uploadedImage.base64, uploadedImage.mediaType)
+    const drugs = res.drugs || SAMPLE_EXTRACT.drugs
+    setExtractedDrugs(drugs)
+    const ints = findInteractions(drugs)
+    setInteractions(ints)
+    setPrescriptionPhase('results')
+  }
+
+
+  return (
+    <div className="min-h-screen">
+      <Navbar />
+      <ModeSwitcher mode={mode} setMode={setMode} />
+
+      {mode === 'repurposing' && (
+        <>
+          {phase === 'idle' && (
+            <SearchLanding query={query} setQuery={setQuery} onSubmit={startAnalysis} />
+          )}
+
+          {phase === 'analyzing' && (
+            <div>
+              <div className="pt-24 px-6 max-w-6xl mx-auto">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-[700px] max-w-full">
+                    <input value={query} readOnly className="w-full rounded-xl border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm" />
+                  </div>
+                  <button className="bg-[#3b82f6] text-white px-6 py-3 rounded-xl font-semibold opacity-75 cursor-not-allowed">Analyzing...</button>
+                </div>
+              </div>
+              <AgentPipeline query={query} agentsCompleted={agentsCompleted} setAgentsCompleted={setAgentsCompleted} onComplete={handleComplete} />
+            </div>
+          )}
+
+          {phase === 'results' && (
+            <div>
+              <div className="pt-24 px-6 max-w-6xl mx-auto">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-[700px] max-w-full">
+                    <input value={query} readOnly className="w-full rounded-xl border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm" />
+                  </div>
+                  <button onClick={() => { setPhase('analyzing'); setAgentsCompleted(0) }} className="bg-[#3b82f6] hover:bg-[#2563eb] text-white px-6 py-3 rounded-xl font-semibold">Analyze</button>
+                </div>
+              </div>
+              <ResultsPage query={query} onDownload={handleDownload} />
+            </div>
+          )}
+        </>
+      )}
+
+      {mode === 'prescription' && (
+        <div className="pt-6">
+          <div className="flex justify-center">
+            <div className="w-full max-w-4xl px-6">
+              {prescriptionPhase === 'upload' && (
+                <UploadZone uploadedImage={uploadedImage} setUploadedImage={setUploadedImage} onUseSample={() => {
+                  // load sample
+                  const dataUrl = sampleBase64
+                  const base64 = dataUrl.split(',')[1]
+                  setUploadedImage({ base64, mediaType: 'image/png', filename: 'sample-prescription.png', previewUrl: dataUrl, toAnalyze: true })
+                  setPrescriptionPhase('analyzing')
+                }} />
+              )}
+
+              {prescriptionPhase === 'analyzing' && (
+                <div className="flex flex-col items-center">
+                  <div className="w-full max-w-2xl">
+                    <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-200">
+                      <img src={uploadedImage.previewUrl} className="w-16 h-16 rounded-lg object-cover border border-gray-200" />
+                      <div className="text-sm text-gray-500">{uploadedImage.filename} • Analyzing...</div>
+                    </div>
+                    <PrescriptionPipeline uploadedImage={uploadedImage} ocrStep={ocrStep} setOcrStep={setOcrStep} onComplete={() => { setOcrStep(4); handlePrescriptionComplete() }} />
+                  </div>
+                </div>
+              )}
+
+              {prescriptionPhase === 'results' && (
+                <div className="flex flex-col items-center">
+                  {prescriptionWarning && (
+                    <div className="w-full max-w-4xl mb-4 rounded-lg bg-yellow-50 border border-yellow-100 p-3 text-sm text-yellow-800">{prescriptionWarning}</div>
+                  )}
+                  <ExtractedDrugsTable uploadedImage={uploadedImage} extractedDrugs={extractedDrugs} />
+
+                  <div className="mt-6 w-full max-w-4xl">
+                    <div className="rounded-xl p-6 bg-white border border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-red-50 text-red-500 flex items-center justify-center"><AlertTriangle /></div>
+                          <div>
+                            <div className="font-bold text-lg">Drug Interaction Analysis</div>
+                            <div className="text-xs font-semibold tracking-widest uppercase text-gray-400">REAL-TIME SAFETY CHECK</div>
+                          </div>
+                        </div>
+                        <div>
+                          <span className="bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full">{interactions.filter(i=>i.severity==='critical').length} Critical · {interactions.filter(i=>i.severity==='severe').length} Severe</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="flex gap-3 text-xs text-gray-600">
+                          <div className="flex items-center gap-1"><span className="w-2 h-2 bg-red-500 rounded-full" /> Critical</div>
+                          <div className="flex items-center gap-1"><span className="w-2 h-2 bg-orange-500 rounded-full" /> Severe</div>
+                          <div className="flex items-center gap-1"><span className="w-2 h-2 bg-yellow-500 rounded-full" /> Moderate</div>
+                          <div className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full" /> Minor</div>
+                        </div>
+
+                        <div className="mt-4 space-y-4">
+                          {interactions.length === 0 ? (
+                            <div className="rounded-xl p-6 bg-green-50 border border-green-100 text-green-700">No dangerous interactions detected</div>
+                          ) : (
+                            interactions.map((it, idx) => (
+                              <InteractionCard key={idx} inter={it} index={idx} expandedInteraction={expandedInteraction} setExpandedInteraction={setExpandedInteraction} />
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <ClinicalSummary extractedDrugs={extractedDrugs} interactions={interactions} onDownload={() => { handleDownload(); setShowToast(true); setTimeout(()=>setShowToast(false),4000) }} onReset={() => { setPrescriptionPhase('upload'); setUploadedImage(null); setExtractedDrugs([]); setInteractions([]); setPrescriptionWarning(null) }} />
+                      <div className="flex items-center justify-center">
+                        {/* Risk score logic */}
+                        <RiskScoreCircle level={interactions.filter(i=>i.severity==='critical').length >=2 ? 'HIGH' : (interactions.filter(i=>i.severity==='critical').length===1 || interactions.filter(i=>i.severity==='severe').length>=2 ? 'MEDIUM' : 'LOW')} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {phase === 'idle' && (
+        <SearchLanding query={query} setQuery={setQuery} onSubmit={startAnalysis} />
+      )}
+
+      {phase === 'analyzing' && (
+        <div>
+          <div className="pt-24 px-6 max-w-6xl mx-auto">
+            <div className="flex items-center gap-3">
+              <div className="relative w-[700px] max-w-full">
+                <input value={query} readOnly className="w-full rounded-xl border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm" />
+              </div>
+              <button className="bg-[#3b82f6] text-white px-6 py-3 rounded-xl font-semibold opacity-75 cursor-not-allowed">Analyzing...</button>
+            </div>
+          </div>
+          <AgentPipeline query={query} agentsCompleted={agentsCompleted} setAgentsCompleted={setAgentsCompleted} onComplete={handleComplete} />
+        </div>
+      )}
+
+      {phase === 'results' && (
+        <div>
+          <div className="pt-24 px-6 max-w-6xl mx-auto">
+            <div className="flex items-center gap-3">
+              <div className="relative w-[700px] max-w-full">
+                <input value={query} readOnly className="w-full rounded-xl border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm" />
+              </div>
+              <button onClick={() => { setPhase('analyzing'); setAgentsCompleted(0) }} className="bg-[#3b82f6] hover:bg-[#2563eb] text-white px-6 py-3 rounded-xl font-semibold">Analyze</button>
+            </div>
+          </div>
+          <ResultsPage query={query} onDownload={handleDownload} />
+        </div>
+      )}
+
+      {/* Toast */}
+      {showToast && (
+        <div className="fixed bottom-6 right-6 z-50 w-72">
+          <div className="bg-white shadow-lg rounded-xl p-4 border border-gray-200">
+            <div className="font-semibold">Report Generated Successfully</div>
+            <div className="text-sm text-gray-500">Your clinical report has been prepared for download.</div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
