@@ -6,6 +6,32 @@ const GEMINI_ENDPOINT =
 const STEP_PATTERN = /STEP\s+([1-5])\s+[^A-Za-z0-9\n]{1,12}([^:\n]+):?\s*/gi
 const TEMPORARY_UNAVAILABLE =
   'Assessment system temporarily unavailable. If emergency, refer to PHC immediately.'
+const ASSESSMENT_RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    dangerSignCheck: { type: 'STRING' },
+    isDangerSignPresent: { type: 'BOOLEAN' },
+    differential: { type: 'STRING' },
+    recommendedAction: { type: 'STRING' },
+    monitoringPlan: { type: 'STRING' },
+    escalationDecision: {
+      type: 'STRING',
+      enum: ['ESCALATE', 'MONITOR'],
+    },
+    escalationJustification: { type: 'STRING' },
+    referralNote: { type: 'STRING' },
+  },
+  required: [
+    'dangerSignCheck',
+    'isDangerSignPresent',
+    'differential',
+    'recommendedAction',
+    'monitoringPlan',
+    'escalationDecision',
+    'escalationJustification',
+    'referralNote',
+  ],
+}
 
 function requirePatientProfile(payload) {
   const patientProfile = payload?.patientProfile || payload
@@ -68,7 +94,41 @@ GEOGRAPHY AND TIME
 ASHA KIT AVAILABLE TODAY
 - ${patientProfile.ashaKit.length ? patientProfile.ashaKit.join('\n- ') : 'No kit items marked available'}
 
-Follow the system instructions exactly. Use exactly five STEP labels and finish with an explicit ESCALATE or MONITOR decision.`
+Follow the system instructions exactly. Put the five reasoning steps into the structured response fields and finish with an explicit ESCALATE or MONITOR decision. Use an empty referralNote when the decision is MONITOR.`
+}
+
+function parseStructuredAssessment(rawResponse) {
+  const parsed = JSON.parse(rawResponse)
+  const requiredStrings = [
+    'dangerSignCheck',
+    'differential',
+    'recommendedAction',
+    'monitoringPlan',
+    'escalationJustification',
+  ]
+
+  if (
+    requiredStrings.some((field) => typeof parsed[field] !== 'string' || !parsed[field].trim())
+    || !['ESCALATE', 'MONITOR'].includes(parsed.escalationDecision)
+  ) {
+    const error = new Error('Gemini returned an incomplete structured assessment')
+    error.status = 502
+    throw error
+  }
+
+  return {
+    dangerSignCheck: parsed.dangerSignCheck.trim(),
+    isDangerSignPresent: Boolean(parsed.isDangerSignPresent),
+    differential: parsed.differential.trim(),
+    recommendedAction: parsed.recommendedAction.trim(),
+    monitoringPlan: parsed.monitoringPlan.trim(),
+    escalationDecision: parsed.escalationDecision,
+    escalationJustification: parsed.escalationJustification.trim(),
+    referralNote: parsed.escalationDecision === 'ESCALATE' && parsed.referralNote?.trim()
+      ? parsed.referralNote.trim()
+      : null,
+    rawResponse,
+  }
 }
 
 function splitStepSections(rawResponse) {
@@ -167,6 +227,8 @@ ${buildDiseaseContextPrompt(patientProfile.district, patientProfile.month)}`
           generationConfig: {
             maxOutputTokens: 4096,
             temperature: 0,
+            responseMimeType: 'application/json',
+            responseSchema: ASSESSMENT_RESPONSE_SCHEMA,
           },
         }),
       })
@@ -218,11 +280,11 @@ ${buildDiseaseContextPrompt(patientProfile.district, patientProfile.month)}`
 
   let rawResponse = await requestAssessment()
   try {
-    return parseAssessmentResponse(rawResponse)
+    return parseStructuredAssessment(rawResponse)
   } catch (parseError) {
-    console.warn('Gemini assessment format was incomplete; retrying once:', parseError.message)
+    console.warn('Gemini structured assessment was incomplete; retrying once:', parseError.message)
     rawResponse = await requestAssessment()
-    return parseAssessmentResponse(rawResponse)
+    return parseStructuredAssessment(rawResponse)
   }
 }
 
