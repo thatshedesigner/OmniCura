@@ -138,12 +138,20 @@ export default function PatientAssessment({ assessment, loading, error, onRetry,
           <AlertTriangle className="mx-auto text-red-300" size={42} />
           <h1 className="mt-4 text-2xl font-bold">Assessment unavailable</h1>
           <p className="mt-2 text-emerald-50/75">{error}</p>
-          <button
-            onClick={onRetry}
-            className="mt-6 rounded-xl bg-emerald-300 px-6 py-3 font-bold text-[#0b2d20]"
-          >
-            Try again
-          </button>
+          <div className="mt-6 flex flex-col gap-3">
+            <button
+              onClick={onRetry}
+              className="rounded-xl bg-emerald-300 px-6 py-3 font-bold text-[#0b2d20]"
+            >
+              Try again
+            </button>
+            <button
+              onClick={onNewPatient}
+              className="rounded-xl border border-emerald-300 px-6 py-3 font-bold text-emerald-200 transition hover:bg-emerald-300/10"
+            >
+              Back to Patient Form
+            </button>
+          </div>
         </div>
       </main>
     )
