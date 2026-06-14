@@ -175,7 +175,9 @@ export default function App() {
     } catch (error) {
       console.error('Prescription analysis failed:', error)
       setPrescriptionError(
-        'This prescription could not be analyzed. Check the image quality and try again.'
+        error.message.toLowerCase().includes('credit balance')
+          ? 'Prescription analysis is unavailable because the Anthropic API account has no credits.'
+          : 'This prescription could not be analyzed. Check the image quality and try again.'
       )
       setUploadedImage((image) => ({ ...image, toAnalyze: false }))
       setPrescriptionPhase('upload')
