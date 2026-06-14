@@ -103,8 +103,15 @@ export async function analyzePrescriptionImage(payload, apiKey) {
   const responseText = await response.text()
 
   if (!response.ok) {
+    let upstreamMessage
+    try {
+      upstreamMessage = JSON.parse(responseText)?.error?.message
+    } catch {
+      upstreamMessage = null
+    }
+
     const error = new Error(
-      `Anthropic API returned ${response.status} ${response.statusText}`
+      upstreamMessage || `Anthropic API returned ${response.status} ${response.statusText}`
     )
     error.status = response.status
     error.responseBody = responseText
