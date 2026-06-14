@@ -79,17 +79,12 @@ export default function App() {
   // Prescription analyzer helpers
   const analyzePrescription = async (base64Image, mediaType) => {
     try {
-      const ANTHROPIC_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
-      
       console.log('=== PRESCRIPTION ANALYSIS START ===')
-      console.log('API Key present:', !!ANTHROPIC_KEY)
       console.log('Image base64 length:', base64Image?.length)
       console.log('Media type:', mediaType)
-      
-      if (!ANTHROPIC_KEY) {
-        console.warn('No API key found')
-        setPrescriptionWarning('Anthropic API key not found. Using sample data for demonstration.')
-        return SAMPLE_EXTRACT
+
+      if (!base64Image || !mediaType) {
+        throw new Error('Uploaded image is missing base64 data or a media type')
       }
 
       const body = JSON.stringify({
@@ -99,9 +94,9 @@ export default function App() {
       })
 
       console.log('Sending request to API...')
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/analyze-prescription', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY },
+        headers: { 'Content-Type': 'application/json' },
         body
       })
       
@@ -109,9 +104,10 @@ export default function App() {
       
       if (!response.ok) {
         const errorData = await response.text()
-        console.error('API Error Response:', errorData)
-        setPrescriptionWarning(`API Error (${response.status}): ${errorData.substring(0, 100)}. Using sample data for demonstration.`)
-        return SAMPLE_EXTRACT
+        const error = new Error(`Prescription API failed with ${response.status}: ${errorData}`)
+        error.status = response.status
+        error.responseBody = errorData
+        throw error
       }
       
       const data = await response.json()
@@ -152,10 +148,6 @@ export default function App() {
   // start analyzing when uploadedImage.toAnalyze is set (file Analyze button)
   useEffect(() => {
     if (uploadedImage?.toAnalyze) {
-      const ANTHROPIC_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
-      if (!ANTHROPIC_KEY) {
-        setPrescriptionWarning('Anthropic API key not found. Using sample data for demonstration.')
-      }
       setPrescriptionPhase('analyzing')
     }
   }, [uploadedImage?.toAnalyze])
@@ -194,6 +186,9 @@ export default function App() {
     })
     
     const res = await analyzePrescription(uploadedImage.base64, uploadedImage.mediaType)
+    if (uploadedImage.isDemo) {
+      setPrescriptionWarning(null)
+    }
     const drugs = res.drugs || SAMPLE_EXTRACT.drugs
     setExtractedDrugs(drugs)
     const ints = findInteractions(drugs)
@@ -252,7 +247,8 @@ export default function App() {
                   // load demo prescription
                   const dataUrl = sampleBase64
                   const base64 = dataUrl.split(',')[1]
-                  setUploadedImage({ base64, mediaType: 'image/png', filename: 'demo-prescription.png', previewUrl: dataUrl, toAnalyze: true })
+                  setPrescriptionWarning(null)
+                  setUploadedImage({ base64, mediaType: 'image/png', filename: 'demo-prescription.png', previewUrl: dataUrl, toAnalyze: true, isDemo: true })
                   setPrescriptionPhase('analyzing')
                 }} />
               )}
@@ -271,9 +267,6 @@ export default function App() {
 
               {prescriptionPhase === 'results' && (
                 <div className="flex flex-col items-center">
-                  {prescriptionWarning && (
-                    <div className="w-full max-w-4xl mb-4 rounded-lg bg-yellow-50 border border-yellow-100 p-3 text-sm text-yellow-800">{prescriptionWarning}</div>
-                  )}
                   <ExtractedDrugsTable uploadedImage={uploadedImage} extractedDrugs={extractedDrugs} />
 
                   <div className="mt-6 w-full max-w-4xl">
