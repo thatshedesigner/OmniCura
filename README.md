@@ -6,7 +6,8 @@ Run locally:
 
 ```powershell
 npm install
-$env:GEMINI_KEY="your-api-key"
+$env:GEMINI_KEY="your-gemini-key"
+$env:ANTHROPIC_API_KEY="your-anthropic-key"
 npm run dev
 ```
 
