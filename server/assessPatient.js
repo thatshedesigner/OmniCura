@@ -51,7 +51,59 @@ function requirePatientProfile(payload) {
     throw error
   }
 
-  return patientProfile
+  const ageValue = Number(patientProfile.age.value)
+  if (
+    !Number.isFinite(ageValue)
+    || ageValue < 0
+    || !['months', 'years'].includes(patientProfile.age.unit)
+  ) {
+    const error = new Error('Patient age is invalid')
+    error.status = 400
+    throw error
+  }
+
+  return {
+    ...patientProfile,
+    age: {
+      value: ageValue,
+      unit: patientProfile.age.unit,
+    },
+    pregnancy: patientProfile.pregnancy || 'none',
+    symptoms: patientProfile.symptoms.filter(
+      (symptom) => typeof symptom === 'string' && symptom.trim()
+    ),
+    vitals: {
+      temperature: finiteNumberOrNull(patientProfile.vitals.temperature),
+      breathingRate: finiteNumberOrNull(patientProfile.vitals.breathingRate),
+      muac: finiteNumberOrNull(patientProfile.vitals.muac),
+      pallor: booleanOrNull(patientProfile.vitals.pallor),
+      jaundice: booleanOrNull(patientProfile.vitals.jaundice),
+    },
+    duration: {
+      value: finiteNumberOrNull(patientProfile.duration.value),
+      unit: ['days', 'weeks'].includes(patientProfile.duration.unit)
+        ? patientProfile.duration.unit
+        : 'days',
+    },
+    patientWords: typeof patientProfile.patientWords === 'string'
+      ? patientProfile.patientWords.trim()
+      : '',
+    district: String(patientProfile.district).trim(),
+    month: String(patientProfile.month).trim(),
+    ashaKit: patientProfile.ashaKit.filter(
+      (item) => typeof item === 'string' && item.trim()
+    ),
+  }
+}
+
+function finiteNumberOrNull(value) {
+  if (value === null || value === undefined || value === '') return null
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
+function booleanOrNull(value) {
+  return typeof value === 'boolean' ? value : null
 }
 
 function valueOrNotRecorded(value, suffix = '') {
@@ -97,8 +149,12 @@ ASHA KIT AVAILABLE TODAY
 Follow the system instructions exactly. Put the five reasoning steps into the structured response fields and finish with an explicit ESCALATE or MONITOR decision. Use an empty referralNote when the decision is MONITOR.`
 }
 
-function parseStructuredAssessment(rawResponse) {
-  const parsed = JSON.parse(rawResponse)
+function parseStructuredAssessment(rawResponse, patientProfile) {
+  const jsonText = rawResponse
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim()
+  const parsed = JSON.parse(jsonText)
   const requiredStrings = [
     'dangerSignCheck',
     'differential',
@@ -116,19 +172,94 @@ function parseStructuredAssessment(rawResponse) {
     throw error
   }
 
+  const deterministicDangerSigns = getDeterministicDangerSigns(patientProfile)
+  const isDangerSignPresent =
+    deterministicDangerSigns.length > 0 || Boolean(parsed.isDangerSignPresent)
+  const escalationDecision = isDangerSignPresent
+    ? 'ESCALATE'
+    : parsed.escalationDecision
+  const dangerSignCheck = deterministicDangerSigns.length
+    ? `Danger signs identified from the recorded patient data:\n- ${deterministicDangerSigns.join('\n- ')}\n\n${parsed.dangerSignCheck.trim()}`
+    : parsed.dangerSignCheck.trim()
+  const escalationJustification = deterministicDangerSigns.length
+    ? `Immediate referral is required because: ${deterministicDangerSigns.join('; ')}. ${parsed.escalationJustification.trim()}`
+    : parsed.escalationJustification.trim()
+  const referralNote = escalationDecision === 'ESCALATE'
+    ? parsed.referralNote?.trim() || buildFallbackReferralNote(
+      patientProfile,
+      deterministicDangerSigns,
+      parsed.differential
+    )
+    : null
+
   return {
-    dangerSignCheck: parsed.dangerSignCheck.trim(),
-    isDangerSignPresent: Boolean(parsed.isDangerSignPresent),
+    dangerSignCheck,
+    isDangerSignPresent,
     differential: parsed.differential.trim(),
     recommendedAction: parsed.recommendedAction.trim(),
     monitoringPlan: parsed.monitoringPlan.trim(),
-    escalationDecision: parsed.escalationDecision,
-    escalationJustification: parsed.escalationJustification.trim(),
-    referralNote: parsed.escalationDecision === 'ESCALATE' && parsed.referralNote?.trim()
-      ? parsed.referralNote.trim()
-      : null,
+    escalationDecision,
+    escalationJustification,
+    referralNote,
     rawResponse,
   }
+}
+
+function getDeterministicDangerSigns(patientProfile) {
+  const symptoms = new Set(
+    patientProfile.symptoms.map((symptom) => symptom.trim().toLowerCase())
+  )
+  const ageInYears = patientProfile.age.unit === 'months'
+    ? patientProfile.age.value / 12
+    : patientProfile.age.value
+  const signs = []
+
+  if (symptoms.has('not eating/drinking')) signs.push('Unable or unwilling to drink')
+  if (symptoms.has('convulsions')) signs.push('Convulsions or fitting reported')
+  if (symptoms.has('unconscious/unresponsive')) signs.push('Unconscious or unresponsive')
+  if (symptoms.has('very weak/cannot stand')) signs.push('Very weak or unable to stand')
+  if (ageInYears < 5 && patientProfile.vitals.muac !== null && patientProfile.vitals.muac < 11.5) {
+    signs.push('MUAC below 11.5 cm in a child under 5')
+  }
+
+  const breathingRate = patientProfile.vitals.breathingRate
+  if (breathingRate !== null) {
+    if (ageInYears < 1 && breathingRate > 60) {
+      signs.push('Breathing rate above 60 per minute in an infant')
+    } else if (ageInYears >= 1 && ageInYears <= 5 && breathingRate > 50) {
+      signs.push('Breathing rate above 50 per minute in a child aged 1 to 5')
+    }
+  }
+
+  return signs
+}
+
+function buildFallbackReferralNote(patientProfile, dangerSigns, differential) {
+  const vitals = [
+    patientProfile.vitals.temperature !== null
+      ? `Temperature ${patientProfile.vitals.temperature} °C`
+      : null,
+    patientProfile.vitals.breathingRate !== null
+      ? `Breathing rate ${patientProfile.vitals.breathingRate}/minute`
+      : null,
+    patientProfile.vitals.muac !== null
+      ? `MUAC ${patientProfile.vitals.muac} cm`
+      : null,
+  ].filter(Boolean)
+
+  return `---
+ASHA WORKER REFERRAL NOTE
+Date: ${new Date().toISOString().slice(0, 10)}
+Patient: ${patientProfile.age.value} ${patientProfile.age.unit}, ${patientProfile.sex}
+District: ${patientProfile.district}
+Presenting complaint: ${patientProfile.patientWords || patientProfile.symptoms.join(', ') || 'Not recorded'}
+Symptoms observed: ${patientProfile.symptoms.join(', ') || 'None selected'}
+Vitals: ${vitals.join('; ') || 'Not recorded'}
+ASHA assessment: ${differential}
+Action taken before referral: Follow ASHA protocol using available kit items only
+Reason for referral: ${dangerSigns.join('; ') || 'High clinical uncertainty or danger sign'}
+Refer to: Nearest PHC / CHC / District Hospital (circle appropriate)
+---`
 }
 
 function splitStepSections(rawResponse) {
@@ -280,11 +411,11 @@ ${buildDiseaseContextPrompt(patientProfile.district, patientProfile.month)}`
 
   let rawResponse = await requestAssessment()
   try {
-    return parseStructuredAssessment(rawResponse)
+    return parseStructuredAssessment(rawResponse, patientProfile)
   } catch (parseError) {
     console.warn('Gemini structured assessment was incomplete; retrying once:', parseError.message)
     rawResponse = await requestAssessment()
-    return parseStructuredAssessment(rawResponse)
+    return parseStructuredAssessment(rawResponse, patientProfile)
   }
 }
 

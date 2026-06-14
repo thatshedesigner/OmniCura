@@ -20,14 +20,22 @@ const MONTH_TO_SEASON = {
 
 export function getCurrentSeason(monthName) {
   const normalizedValue = String(monthName || '').trim().toLowerCase()
-  const normalizedMonth = Object.keys(MONTH_TO_SEASON).find((month) =>
+  let normalizedMonth = Object.keys(MONTH_TO_SEASON).find((month) =>
     new RegExp(`\\b${month}\\b`, 'i').test(normalizedValue)
   )
-  const season = MONTH_TO_SEASON[normalizedMonth]
 
-  if (!season) {
-    throw new Error(`Unknown month name: ${monthName || 'empty'}`)
+  if (!normalizedMonth) {
+    const parsedDate = new Date(normalizedValue)
+    if (!Number.isNaN(parsedDate.getTime())) {
+      normalizedMonth = Object.keys(MONTH_TO_SEASON)[parsedDate.getMonth()]
+    }
   }
+
+  if (!normalizedMonth) {
+    normalizedMonth = Object.keys(MONTH_TO_SEASON)[new Date().getMonth()]
+  }
+
+  const season = MONTH_TO_SEASON[normalizedMonth]
 
   return season
 }
