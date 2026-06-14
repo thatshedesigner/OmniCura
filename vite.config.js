@@ -2,7 +2,7 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { analyzePrescriptionImage } from './server/analyzePrescription.js'
 import { assessPatient } from './server/assessPatient.js'
-import { logAssessment } from './server/assessmentLog.js'
+import { logAssessment, readAssessmentLogs } from './server/assessmentLog.js'
 
 const MAX_REQUEST_BYTES = 15 * 1024 * 1024
 
@@ -96,12 +96,22 @@ function patientAssessmentPlugin(apiKey) {
 
 function assessmentLogPlugin() {
   const handleRequest = async (req, res, next) => {
-    if (req.url !== '/api/log' || req.method !== 'POST') {
+    const isLogWrite = ['/api/log', '/api/logs'].includes(req.url) && req.method === 'POST'
+    const isLogRead = req.url === '/api/logs' && req.method === 'GET'
+    if (!isLogWrite && !isLogRead) {
       next()
       return
     }
 
     try {
+      if (isLogRead) {
+        const logs = await readAssessmentLogs()
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify(logs))
+        return
+      }
+
       const chunks = []
       for await (const chunk of req) chunks.push(chunk)
       const payload = JSON.parse(Buffer.concat(chunks).toString('utf8'))

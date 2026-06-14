@@ -17,6 +17,8 @@ import SessionSetup from './components/SessionSetup'
 import { useSession } from './context/SessionContext'
 import SymptomIntake from './components/SymptomIntake'
 import PatientAssessment from './components/PatientAssessment'
+import AuditTrail from './components/AuditTrail'
+import CHWNavigation from './components/CHWNavigation'
 
 export default function App() {
   const { sessionStarted, district, month, inventory } = useSession()
@@ -37,6 +39,7 @@ export default function App() {
   const [patientAssessment, setPatientAssessment] = useState(null)
   const [assessmentLoading, setAssessmentLoading] = useState(false)
   const [assessmentError, setAssessmentError] = useState(null)
+  const [chwView, setChwView] = useState('consultation')
 
   useEffect(() => {
     let interval
@@ -220,7 +223,7 @@ export default function App() {
         throw new Error(data.error || 'Assessment could not be completed')
       }
       setPatientAssessment(data)
-      fetch('/api/log', {
+      fetch('/api/logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -242,12 +245,44 @@ export default function App() {
     return <SessionSetup />
   }
 
+  const openNewPatient = () => {
+    setChwView('consultation')
+    setPatientProfile(null)
+    setPatientAssessment(null)
+    setAssessmentError(null)
+  }
+
+  if (chwView === 'audit') {
+    return (
+      <>
+        <CHWNavigation
+          currentView="audit"
+          onNewPatient={openNewPatient}
+        />
+        <AuditTrail onNewPatient={openNewPatient} />
+      </>
+    )
+  }
+
   if (!patientProfile) {
-    return <SymptomIntake onSubmit={assessPatient} />
+    return (
+      <>
+        <CHWNavigation
+          currentView="consultation"
+          onAuditTrail={() => setChwView('audit')}
+        />
+        <SymptomIntake onSubmit={assessPatient} />
+      </>
+    )
   }
 
   if (!patientAssessment || assessmentLoading || assessmentError) {
     return (
+      <>
+        <CHWNavigation
+          currentView="consultation"
+          onAuditTrail={() => setChwView('audit')}
+        />
       <PatientAssessment
         assessment={patientAssessment}
         loading={assessmentLoading}
@@ -274,16 +309,18 @@ export default function App() {
           duration: patientProfile.duration,
           patientWords: patientProfile.patientWords,
         })}
-        onNewPatient={() => {
-          setPatientProfile(null)
-          setPatientAssessment(null)
-          setAssessmentError(null)
-        }}
+        onNewPatient={openNewPatient}
       />
+      </>
     )
   }
 
   return (
+    <>
+    <CHWNavigation
+      currentView="consultation"
+      onAuditTrail={() => setChwView('audit')}
+    />
     <PatientAssessment
       assessment={patientAssessment}
       loading={false}
@@ -310,12 +347,9 @@ export default function App() {
         duration: patientProfile.duration,
         patientWords: patientProfile.patientWords,
       })}
-      onNewPatient={() => {
-        setPatientProfile(null)
-        setPatientAssessment(null)
-        setAssessmentError(null)
-      }}
+      onNewPatient={openNewPatient}
     />
+    </>
   )
 
   return (
