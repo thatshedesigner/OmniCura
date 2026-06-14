@@ -19,7 +19,10 @@ const MONTH_TO_SEASON = {
 }
 
 export function getCurrentSeason(monthName) {
-  const normalizedMonth = String(monthName || '').trim().toLowerCase()
+  const normalizedValue = String(monthName || '').trim().toLowerCase()
+  const normalizedMonth = Object.keys(MONTH_TO_SEASON).find((month) =>
+    new RegExp(`\\b${month}\\b`, 'i').test(normalizedValue)
+  )
   const season = MONTH_TO_SEASON[normalizedMonth]
 
   if (!season) {
