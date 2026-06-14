@@ -27,7 +27,7 @@ export default function App() {
   const [extractedDrugs, setExtractedDrugs] = useState([])
   const [interactions, setInteractions] = useState([])
   const [expandedInteraction, setExpandedInteraction] = useState(null)
-  const [prescriptionWarning, setPrescriptionWarning] = useState(null)
+  const [prescriptionError, setPrescriptionError] = useState(null)
 
   useEffect(() => {
     let interval
@@ -78,76 +78,54 @@ export default function App() {
 
   // Prescription analyzer helpers
   const analyzePrescription = async (base64Image, mediaType) => {
-    try {
-      console.log('=== PRESCRIPTION ANALYSIS START ===')
-      console.log('Image base64 length:', base64Image?.length)
-      console.log('Media type:', mediaType)
+    console.log('=== PRESCRIPTION ANALYSIS START ===')
+    console.log('Image base64 length:', base64Image?.length)
+    console.log('Media type:', mediaType)
 
-      if (!base64Image || !mediaType) {
-        throw new Error('Uploaded image is missing base64 data or a media type')
-      }
-
-      const body = JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: [ { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Image } }, { type: 'text', text: `You are a medical OCR and NLP system. Analyze this handwritten prescription image. Extract ALL drug names, dosages, and frequencies. Return ONLY a JSON object in this exact format:\n{ "drugs": [ { "name": "DrugName", "dosage": "Xmg", "frequency": "...", "confidence": 95 } ], "prescriber": "Dr. Name if visible or null", "date": "date if visible or null", "rawText": "full raw OCR text of prescription" } Do not include any text outside the JSON object.` } ] }]
-      })
-
-      console.log('Sending request to API...')
-      const response = await fetch('/api/analyze-prescription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body
-      })
-      
-      console.log('Response status:', response.status, response.statusText)
-      
-      if (!response.ok) {
-        const errorData = await response.text()
-        const error = new Error(`Prescription API failed with ${response.status}: ${errorData}`)
-        error.status = response.status
-        error.responseBody = errorData
-        throw error
-      }
-      
-      const data = await response.json()
-      console.log('API Response received:', data)
-      
-      if (!data.content || data.content.length === 0) {
-        console.error('No content in API response')
-        setPrescriptionWarning('Unable to process image. Using sample data for demonstration.')
-        return SAMPLE_EXTRACT
-      }
-      
-      // find text block
-      const text = data?.content?.find?.(b => b.type === 'text')?.text || '{}'
-      console.log('Extracted text from response:', text)
-      
-      const parsed = JSON.parse(text.replace(/```json|```/g, '').trim())
-      console.log('Parsed extraction result:', parsed)
-      
-      if (parsed && parsed.drugs) {
-        console.log('=== PRESCRIPTION ANALYSIS SUCCESS ===')
-        return parsed
-      } else {
-        console.error('Invalid response format - no drugs found')
-        setPrescriptionWarning('Invalid response format. Using sample data for demonstration.')
-        return SAMPLE_EXTRACT
-      }
-    } catch (e) {
-      console.error('=== PRESCRIPTION ANALYSIS ERROR ===')
-      console.error('Error name:', e.name)
-      console.error('Error message:', e.message)
-      console.error('Error stack:', e.stack)
-      console.error('Full error object:', e)
-      setPrescriptionWarning(`Error: ${e.message}. Using sample data for demonstration.`)
-      return SAMPLE_EXTRACT
+    if (!base64Image || !mediaType) {
+      throw new Error('Uploaded image is missing base64 data or a media type')
     }
+
+    const response = await fetch('/api/analyze-prescription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64Image, mediaType })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.error || `Prescription API failed with ${response.status}`)
+    }
+
+    const data = await response.json()
+    const text = data?.content?.find?.((block) => block.type === 'text')?.text
+
+    if (!text) {
+      throw new Error('Anthropic returned no prescription text')
+    }
+
+    const normalizedText = text.replace(/```json|```/g, '').trim()
+    const jsonStart = normalizedText.indexOf('{')
+    const jsonEnd = normalizedText.lastIndexOf('}')
+    const parsed = JSON.parse(
+      jsonStart >= 0 && jsonEnd > jsonStart
+        ? normalizedText.slice(jsonStart, jsonEnd + 1)
+        : normalizedText
+    )
+
+    if (!Array.isArray(parsed.drugs)) {
+      throw new Error('Anthropic returned an invalid prescription format')
+    }
+
+    return parsed
   }
 
   // start analyzing when uploadedImage.toAnalyze is set (file Analyze button)
   useEffect(() => {
     if (uploadedImage?.toAnalyze) {
+      setPrescriptionError(null)
+      setExtractedDrugs([])
+      setInteractions([])
       setPrescriptionPhase('analyzing')
     }
   }, [uploadedImage?.toAnalyze])
@@ -185,15 +163,23 @@ export default function App() {
       filename: uploadedImage.filename
     })
     
-    const res = await analyzePrescription(uploadedImage.base64, uploadedImage.mediaType)
-    if (uploadedImage.isDemo) {
-      setPrescriptionWarning(null)
+    try {
+      const res = uploadedImage.isDemo
+        ? SAMPLE_EXTRACT
+        : await analyzePrescription(uploadedImage.base64, uploadedImage.mediaType)
+      const drugs = res.drugs
+
+      setExtractedDrugs(drugs)
+      setInteractions(findInteractions(drugs))
+      setPrescriptionPhase('results')
+    } catch (error) {
+      console.error('Prescription analysis failed:', error)
+      setPrescriptionError(
+        'This prescription could not be analyzed. Check the image quality and try again.'
+      )
+      setUploadedImage((image) => ({ ...image, toAnalyze: false }))
+      setPrescriptionPhase('upload')
     }
-    const drugs = res.drugs || SAMPLE_EXTRACT.drugs
-    setExtractedDrugs(drugs)
-    const ints = findInteractions(drugs)
-    setInteractions(ints)
-    setPrescriptionPhase('results')
   }
 
 
@@ -243,11 +229,11 @@ export default function App() {
           <div className="flex justify-center">
             <div className="w-full max-w-4xl px-6">
               {prescriptionPhase === 'upload' && (
-                <UploadZone uploadedImage={uploadedImage} setUploadedImage={setUploadedImage} onUseSample={() => {
+                <UploadZone uploadedImage={uploadedImage} setUploadedImage={setUploadedImage} analysisError={prescriptionError} onClearError={() => setPrescriptionError(null)} onError={setPrescriptionError} onUseSample={() => {
                   // load demo prescription
                   const dataUrl = sampleBase64
                   const base64 = dataUrl.split(',')[1]
-                  setPrescriptionWarning(null)
+                  setPrescriptionError(null)
                   setUploadedImage({ base64, mediaType: 'image/png', filename: 'demo-prescription.png', previewUrl: dataUrl, toAnalyze: true, isDemo: true })
                   setPrescriptionPhase('analyzing')
                 }} />
@@ -305,7 +291,7 @@ export default function App() {
                     </div>
 
                     <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <ClinicalSummary extractedDrugs={extractedDrugs} interactions={interactions} onDownload={() => { handleDownload(); setShowToast(true); setTimeout(()=>setShowToast(false),4000) }} onReset={() => { setPrescriptionPhase('upload'); setUploadedImage(null); setExtractedDrugs([]); setInteractions([]); setPrescriptionWarning(null) }} />
+                      <ClinicalSummary extractedDrugs={extractedDrugs} interactions={interactions} onDownload={() => { handleDownload(); setShowToast(true); setTimeout(()=>setShowToast(false),4000) }} onReset={() => { setPrescriptionPhase('upload'); setUploadedImage(null); setExtractedDrugs([]); setInteractions([]); setPrescriptionError(null) }} />
                       <div className="flex items-center justify-center">
                         {/* Risk score logic */}
                         <RiskScoreCircle level={interactions.filter(i=>i.severity==='critical').length >=2 ? 'HIGH' : (interactions.filter(i=>i.severity==='critical').length===1 || interactions.filter(i=>i.severity==='severe').length>=2 ? 'MEDIUM' : 'LOW')} />
