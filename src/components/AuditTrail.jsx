@@ -24,12 +24,9 @@ function relativeTime(timestamp, now) {
   return `${elapsedDays} day${elapsedDays === 1 ? '' : 's'} ago`
 }
 
-function isToday(timestamp) {
-  const date = new Date(timestamp)
-  const today = new Date()
-  return date.getFullYear() === today.getFullYear()
-    && date.getMonth() === today.getMonth()
-    && date.getDate() === today.getDate()
+function isWithinLast24Hours(timestamp, now) {
+  const elapsed = now - new Date(timestamp).getTime()
+  return elapsed >= 0 && elapsed < 24 * 60 * 60 * 1000
 }
 
 function StatCard({ icon, label, value, detail }) {
@@ -65,14 +62,17 @@ export default function AuditTrail({ onNewPatient }) {
     setExpandedId(null)
   }
 
-  const todayLogs = useMemo(() => logs.filter((entry) => isToday(entry.timestamp)), [logs])
-  const escalationCount = todayLogs.filter(
+  const recentLogs = useMemo(
+    () => logs.filter((entry) => isWithinLast24Hours(entry.timestamp, now)),
+    [logs, now]
+  )
+  const escalationCount = recentLogs.filter(
     (entry) => entry.escalationDecision === 'ESCALATE'
   ).length
-  const escalationPercentage = todayLogs.length
-    ? Math.round((escalationCount / todayLogs.length) * 100)
+  const escalationPercentage = recentLogs.length
+    ? Math.round((escalationCount / recentLogs.length) * 100)
     : 0
-  const districtsCovered = new Set(todayLogs.map((entry) => entry.district)).size
+  const districtsCovered = new Set(recentLogs.map((entry) => entry.district)).size
 
   return (
     <main className="min-h-screen bg-[#061725] px-4 py-8 text-white sm:px-6 lg:px-8">
@@ -107,18 +107,18 @@ export default function AuditTrail({ onNewPatient }) {
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard
             icon={<ClipboardList size={22} />}
-            label="Total assessments today"
-            value={todayLogs.length}
+            label="Assessments in last 24 hours"
+            value={recentLogs.length}
           />
           <StatCard
             icon={<AlertTriangle size={22} />}
-            label="Escalations today"
+            label="Escalations in last 24 hours"
             value={escalationCount}
-            detail={`${escalationPercentage}% of today's assessments`}
+            detail={`${escalationPercentage}% of recent assessments`}
           />
           <StatCard
             icon={<MapPin size={22} />}
-            label="Districts covered"
+            label="Districts covered in last 24 hours"
             value={districtsCovered}
           />
         </div>
