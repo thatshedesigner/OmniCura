@@ -66,41 +66,6 @@ If deployed across India's 600,000 villages, this system could give every ASHA w
 
 The current prototype uses a cloud model and therefore requires an internet connection. Offline or low-connectivity deployment would require a local model or a store-and-forward workflow.
 
-## Setup
-
-### Requirements
-
-- Node.js 18 or newer
-- A Gemini API key
-
-### Install
-
-```bash
-git clone https://github.com/thatshedesigner/OmniCura.git
-cd OmniCura
-npm install
-```
-
-Create a `.env.local` file:
-
-```env
-GEMINI_KEY=your_gemini_api_key
-```
-
-Do not prefix the key with `VITE_`. The key is read only by backend API routes and must not be exposed to client-side code.
-
-Start the development server:
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173).
-
-### Production
-
-Add `GEMINI_KEY` to the Vercel project environment variables for Production and Preview, then redeploy.
-
 ## Safety
 
 OmniCura CHW is a decision support prototype, not a diagnostic system. It prioritizes danger-sign detection, limits recommendations to available ASHA kit resources, and defaults to referral when information is incomplete or risk is high.
