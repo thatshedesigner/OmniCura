@@ -1,3 +1,9 @@
+const GEMINI_ENDPOINT =
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+
+const EXTRACTION_PROMPT =
+  'You are a medical assistant. Analyze this handwritten prescription image. Extract and clearly list: each medicine name, dosage, frequency, and any special instructions. If something is unclear, mention it.'
+
 const SUPPORTED_MEDIA_TYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -5,26 +11,7 @@ const SUPPORTED_MEDIA_TYPES = new Set([
   'image/webp',
 ])
 
-const EXTRACTION_PROMPT = `You are a medical OCR system. Read this prescription image carefully and extract only medication information that is actually visible.
-
-Return only valid JSON in this exact shape:
-{
-  "drugs": [
-    {
-      "name": "medication name",
-      "dosage": "visible dosage or Not visible",
-      "frequency": "visible frequency or Not visible",
-      "confidence": 0
-    }
-  ],
-  "prescriber": "visible prescriber name or null",
-  "date": "visible date or null",
-  "rawText": "all legible prescription text"
-}
-
-Confidence must be an integer from 0 to 100. Do not guess medication names. If no medication can be read confidently, return an empty drugs array.`
-
-export function validateImagePayload(payload) {
+function validateImagePayload(payload) {
   const base64Image = payload?.base64Image
   const mediaType = payload?.mediaType
 
@@ -57,47 +44,53 @@ export function validateImagePayload(payload) {
 
 export async function analyzePrescriptionImage(payload, apiKey) {
   if (!apiKey) {
-    const error = new Error('ANTHROPIC_API_KEY is not configured')
+    const error = new Error('GEMINI_KEY is not configured')
     error.status = 500
     throw error
   }
 
   const { base64Image, mediaType } = validateImagePayload(payload)
-  const requestBody = {
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1500,
-    messages: [{
-      role: 'user',
-      content: [
-        {
-          type: 'image',
-          source: {
-            type: 'base64',
-            media_type: mediaType,
-            data: base64Image,
-          },
-        },
-        {
-          type: 'text',
-          text: EXTRACTION_PROMPT,
-        },
-      ],
-    }],
-  }
-
-  console.log('Sending prescription image to Anthropic', {
-    mediaType,
-    base64Length: base64Image.length,
-  })
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
     method: 'POST',
     headers: {
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
+      'Content-Type': 'application/json',
     },
-    body: JSON.stringify(requestBody),
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { text: EXTRACTION_PROMPT },
+          {
+            inline_data: {
+              mime_type: mediaType,
+              data: base64Image,
+            },
+          },
+        ],
+      }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'OBJECT',
+          properties: {
+            medicines: {
+              type: 'ARRAY',
+              items: {
+                type: 'OBJECT',
+                properties: {
+                  name: { type: 'STRING' },
+                  dosage: { type: 'STRING' },
+                  frequency: { type: 'STRING' },
+                  specialInstructions: { type: 'STRING' },
+                  confidence: { type: 'INTEGER' },
+                },
+                required: ['name', 'dosage', 'frequency', 'specialInstructions', 'confidence'],
+              },
+            },
+          },
+          required: ['medicines'],
+        },
+      },
+    }),
   })
 
   const responseText = await response.text()
@@ -111,12 +104,34 @@ export async function analyzePrescriptionImage(payload, apiKey) {
     }
 
     const error = new Error(
-      upstreamMessage || `Anthropic API returned ${response.status} ${response.statusText}`
+      upstreamMessage || `Gemini API returned ${response.status} ${response.statusText}`
     )
     error.status = response.status
     error.responseBody = responseText
     throw error
   }
 
-  return JSON.parse(responseText)
+  const geminiResponse = JSON.parse(responseText)
+  const resultText = geminiResponse?.candidates?.[0]?.content?.parts?.[0]?.text
+
+  if (!resultText) {
+    const error = new Error('Gemini returned no prescription result')
+    error.status = 502
+    throw error
+  }
+
+  const parsed = JSON.parse(resultText)
+  const medicines = Array.isArray(parsed.medicines) ? parsed.medicines : []
+
+  return {
+    drugs: medicines.map((medicine) => ({
+      name: medicine.name || 'Unclear',
+      dosage: medicine.dosage || 'Unclear',
+      frequency: medicine.frequency || 'Unclear',
+      specialInstructions: medicine.specialInstructions || '',
+      confidence: Number.isFinite(medicine.confidence)
+        ? Math.max(0, Math.min(100, medicine.confidence))
+        : 0,
+    })),
+  }
 }

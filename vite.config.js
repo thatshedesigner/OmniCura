@@ -4,16 +4,16 @@ import { analyzePrescriptionImage } from './server/analyzePrescription.js'
 
 const MAX_REQUEST_BYTES = 15 * 1024 * 1024
 
-function anthropicApiPlugin(apiKey) {
+function geminiApiPlugin(apiKey) {
   const handleRequest = async (req, res, next) => {
-    if (req.url !== '/api/analyze-prescription' || req.method !== 'POST') {
+    if (req.url !== '/api/analyze' || req.method !== 'POST') {
       next()
       return
     }
 
     try {
       if (!apiKey) {
-        throw new Error('ANTHROPIC_API_KEY is not configured on the server')
+        throw new Error('GEMINI_KEY is not configured on the server')
       }
 
       const chunks = []
@@ -36,10 +36,7 @@ function anthropicApiPlugin(apiKey) {
       res.setHeader('Content-Type', 'application/json')
       res.end(JSON.stringify(result))
     } catch (error) {
-      console.error('Anthropic prescription analysis failed:', error)
-      if (error.responseBody) {
-        console.error('Anthropic error response:', error.responseBody)
-      }
+      console.error('Gemini prescription analysis failed:', error)
 
       res.statusCode = error.status || 500
       res.setHeader('Content-Type', 'application/json')
@@ -51,7 +48,7 @@ function anthropicApiPlugin(apiKey) {
   }
 
   return {
-    name: 'anthropic-api',
+    name: 'gemini-api',
     configureServer(server) {
       server.middlewares.use(handleRequest)
     },
@@ -67,7 +64,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
-      anthropicApiPlugin(env.ANTHROPIC_API_KEY || env.VITE_ANTHROPIC_API_KEY),
+      geminiApiPlugin(env.GEMINI_KEY),
     ],
   }
 })

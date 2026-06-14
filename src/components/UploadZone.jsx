@@ -56,7 +56,7 @@ export default function UploadZone({ uploadedImage, setUploadedImage, onUseSampl
     console.log('File size:', file.size, 'bytes')
 
     if (!supportedImageTypes.has(file.type)) {
-      console.error('Unsupported image type for Anthropic Vision:', file.type || 'unknown')
+      console.error('Unsupported image type for Gemini Vision:', file.type || 'unknown')
       onError('Choose a JPG, PNG, GIF, or WEBP image.')
       return
     }
