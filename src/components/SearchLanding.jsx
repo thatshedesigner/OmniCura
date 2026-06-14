@@ -5,7 +5,7 @@ export default function SearchLanding({ query, setQuery, onSubmit }) {
   const examples = ['BRCA1 Repurposing', "APOE in Alzheimer's", 'TP53 Trials']
 
   return (
-    <div className="min-h-screen flex items-center justify-center pt-24">
+    <div className="flex justify-center pt-12 pb-16">
       <div className="w-full max-w-4xl px-6">
         <div className="flex items-center justify-center gap-3">
           <div className="relative w-[700px] max-w-full">
@@ -28,7 +28,7 @@ export default function SearchLanding({ query, setQuery, onSubmit }) {
           </button>
         </div>
 
-        <div className="mt-16 text-center">
+        <div className="mt-10 text-center">
           <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center">
             <Search size={32} className="text-gray-400" />
           </div>
