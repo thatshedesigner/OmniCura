@@ -1,7 +1,7 @@
 import React from 'react'
 import { Star, CheckCircle } from 'lucide-react'
 
-export default function ClinicalSummary({ extractedDrugs, interactions, onDownload, onReset }) {
+export default function ClinicalSummary({ extractedDrugs, interactions, onDownload, onReset, showDownload = true }) {
   const criticalCount = interactions.filter(i => i.severity === 'critical').length
   const severeCount = interactions.filter(i => i.severity === 'severe').length
   const level = criticalCount >= 2 ? 'HIGH' : (criticalCount ===1 || severeCount >=2 ? 'MEDIUM' : 'LOW')
@@ -17,7 +17,9 @@ export default function ClinicalSummary({ extractedDrugs, interactions, onDownlo
           </div>
         </div>
         <div className="flex gap-3">
-          <button onClick={onDownload} className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold px-5 py-2.5 rounded-xl">Download Interaction Report (PDF)</button>
+          {showDownload && (
+            <button onClick={onDownload} className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold px-5 py-2.5 rounded-xl">Download Interaction Report (PDF)</button>
+          )}
           <button onClick={onReset} className="border border-gray-300 text-gray-700 px-4 py-2.5 rounded-xl">Analyze Another Prescription</button>
         </div>
       </div>

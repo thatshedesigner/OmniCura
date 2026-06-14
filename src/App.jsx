@@ -275,7 +275,7 @@ export default function App() {
                     </div>
 
                     <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <ClinicalSummary extractedDrugs={extractedDrugs} interactions={interactions} onDownload={() => { handleDownload(); setShowToast(true); setTimeout(()=>setShowToast(false),4000) }} onReset={() => { setPrescriptionPhase('upload'); setUploadedImage(null); setExtractedDrugs([]); setInteractions([]); setPrescriptionError(null) }} />
+                      <ClinicalSummary extractedDrugs={extractedDrugs} interactions={interactions} showDownload={!uploadedImage?.isDemo} onDownload={() => { handleDownload(); setShowToast(true); setTimeout(()=>setShowToast(false),4000) }} onReset={() => { setPrescriptionPhase('upload'); setUploadedImage(null); setExtractedDrugs([]); setInteractions([]); setPrescriptionError(null) }} />
                       <div className="flex items-center justify-center">
                         {/* Risk score logic */}
                         <RiskScoreCircle level={interactions.filter(i=>i.severity==='critical').length >=2 ? 'HIGH' : (interactions.filter(i=>i.severity==='critical').length===1 || interactions.filter(i=>i.severity==='severe').length>=2 ? 'MEDIUM' : 'LOW')} />
