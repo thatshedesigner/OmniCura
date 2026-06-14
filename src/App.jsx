@@ -219,7 +219,17 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ patientProfile: normalizedProfile }),
       })
-      const data = await response.json()
+      const responseText = await response.text()
+      let data
+      try {
+        data = JSON.parse(responseText)
+      } catch {
+        throw new Error(
+          response.ok
+            ? 'Assessment service returned an unreadable response'
+            : `Assessment service failed with status ${response.status}`
+        )
+      }
       if (!response.ok) {
         throw new Error(data.message || data.error || 'Assessment could not be completed')
       }
