@@ -32,3 +32,26 @@ html {
   transform: translateX(100%);
   transition: transform 300ms ease;
 }
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  #referral-note,
+  #referral-note * {
+    visibility: visible !important;
+  }
+
+  #referral-note {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  #referral-note .referral-actions {
+    display: none !important;
+  }
+}
