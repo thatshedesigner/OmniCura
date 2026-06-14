@@ -135,7 +135,7 @@ export async function assessPatient(payload, apiKey) {
 ${buildDiseaseContextPrompt(patientProfile.district, patientProfile.month)}`
 
   if (!apiKey) {
-    const error = new Error('GEMINI_KEY is not configured')
+    const error = new Error('GEMINI_API_KEY is not configured')
     error.status = 503
     error.publicMessage = TEMPORARY_UNAVAILABLE
     throw error
@@ -171,10 +171,20 @@ ${buildDiseaseContextPrompt(patientProfile.district, patientProfile.month)}`
 
   const responseText = await response.text()
   if (!response.ok) {
-    const error = new Error(`Gemini API returned ${response.status}`)
+    let upstreamMessage
+    try {
+      upstreamMessage = JSON.parse(responseText)?.error?.message
+    } catch {
+      upstreamMessage = null
+    }
+
+    const error = new Error(
+      upstreamMessage || `Gemini API returned ${response.status} ${response.statusText}`
+    )
     error.status = 503
     error.publicMessage = TEMPORARY_UNAVAILABLE
     error.responseBody = responseText
+    error.response = responseText
     throw error
   }
 
