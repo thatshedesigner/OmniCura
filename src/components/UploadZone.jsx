@@ -5,10 +5,17 @@ export default function UploadZone({ uploadedImage, setUploadedImage, onUseSampl
   const ref = useRef()
 
   const handleFile = (file) => {
+    console.log('=== FILE UPLOAD ===')
+    console.log('File name:', file.name)
+    console.log('File type:', file.type)
+    console.log('File size:', file.size, 'bytes')
+    
     const reader = new FileReader()
     reader.onload = (e) => {
       const dataUrl = e.target.result
       const base64 = dataUrl.split(',')[1]
+      console.log('Data URL generated, base64 length:', base64?.length)
+      console.log('First 50 chars of base64:', base64?.substring(0, 50))
       setUploadedImage({ base64, mediaType: file.type, filename: file.name, previewUrl: dataUrl })
     }
     reader.readAsDataURL(file)
@@ -33,7 +40,7 @@ export default function UploadZone({ uploadedImage, setUploadedImage, onUseSampl
             <button onClick={() => ref.current?.click()} className="bg-[#3b82f6] text-white px-5 py-2 rounded-lg text-sm font-semibold">Choose File</button>
           </div>
           <div className="mt-4">
-            <button onClick={onUseSample} className="text-sm text-[#3b82f6] hover:underline">Use a sample prescription →</button>
+            <button onClick={onUseSample} className="text-sm text-[#3b82f6] hover:underline">Try demo prescription →</button>
           </div>
         </div>
       ) : (
@@ -45,7 +52,7 @@ export default function UploadZone({ uploadedImage, setUploadedImage, onUseSampl
             <button onClick={() => setUploadedImage((s) => ({...s, toAnalyze: true}))} className="bg-[#3b82f6] text-white px-6 py-2 rounded-lg font-semibold text-sm">Analyze Prescription</button>
           </div>
           <div className="mt-3">
-            <button onClick={onUseSample} className="text-sm text-[#3b82f6] hover:underline">Use a sample prescription →</button>
+            <button onClick={onUseSample} className="text-sm text-[#3b82f6] hover:underline">Try demo prescription →</button>
           </div>
         </div>
       )}
