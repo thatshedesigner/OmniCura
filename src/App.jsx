@@ -86,7 +86,7 @@ export default function App() {
       throw new Error('Uploaded image is missing base64 data or a media type')
     }
 
-    const response = await fetch('/api/analyze-prescription', {
+    const response = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ base64Image, mediaType })
@@ -98,26 +98,12 @@ export default function App() {
     }
 
     const data = await response.json()
-    const text = data?.content?.find?.((block) => block.type === 'text')?.text
 
-    if (!text) {
-      throw new Error('Anthropic returned no prescription text')
+    if (!Array.isArray(data.drugs)) {
+      throw new Error('Gemini returned an invalid prescription format')
     }
 
-    const normalizedText = text.replace(/```json|```/g, '').trim()
-    const jsonStart = normalizedText.indexOf('{')
-    const jsonEnd = normalizedText.lastIndexOf('}')
-    const parsed = JSON.parse(
-      jsonStart >= 0 && jsonEnd > jsonStart
-        ? normalizedText.slice(jsonStart, jsonEnd + 1)
-        : normalizedText
-    )
-
-    if (!Array.isArray(parsed.drugs)) {
-      throw new Error('Anthropic returned an invalid prescription format')
-    }
-
-    return parsed
+    return data
   }
 
   // start analyzing when uploadedImage.toAnalyze is set (file Analyze button)
@@ -174,11 +160,7 @@ export default function App() {
       setPrescriptionPhase('results')
     } catch (error) {
       console.error('Prescription analysis failed:', error)
-      setPrescriptionError(
-        error.message.toLowerCase().includes('credit balance')
-          ? 'Prescription analysis is unavailable because the Anthropic API account has no credits.'
-          : 'This prescription could not be analyzed. Check the image quality and try again.'
-      )
+      setPrescriptionError('This prescription could not be analyzed. Check the image quality and try again.')
       setUploadedImage((image) => ({ ...image, toAnalyze: false }))
       setPrescriptionPhase('upload')
     }

@@ -8,14 +8,10 @@ export default async function handler(req, res) {
 
   try {
     const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
-    const apiKey = process.env.ANTHROPIC_API_KEY || process.env.VITE_ANTHROPIC_API_KEY
-    const result = await analyzePrescriptionImage(payload, apiKey)
+    const result = await analyzePrescriptionImage(payload, process.env.GEMINI_KEY)
     return res.status(200).json(result)
   } catch (error) {
-    console.error('Anthropic prescription analysis failed:', error)
-    if (error.responseBody) {
-      console.error('Anthropic error response:', error.responseBody)
-    }
+    console.error('Gemini prescription analysis failed:', error)
 
     return res.status(error.status || 500).json({
       error: error.message,

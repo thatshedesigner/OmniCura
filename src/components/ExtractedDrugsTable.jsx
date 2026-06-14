@@ -39,7 +39,12 @@ export default function ExtractedDrugsTable({ uploadedImage, extractedDrugs }) {
                 <div key={i} className="grid grid-cols-4 items-center p-3 text-sm">
                   <div className="font-semibold text-gray-900 font-mono">{d.name}</div>
                   <div className="text-gray-700">{d.dosage}</div>
-                  <div className="text-gray-600">{d.frequency}</div>
+                  <div className="text-gray-600">
+                    <div>{d.frequency}</div>
+                    {d.specialInstructions && (
+                      <div className="mt-1 text-xs text-gray-400">{d.specialInstructions}</div>
+                    )}
+                  </div>
                   <div>
                     <span className={`${d.confidence >= 90 ? 'bg-green-100 text-green-700' : d.confidence >=70 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'} text-xs px-2 py-0.5 rounded-full`}>{d.confidence}%</span>
                   </div>
@@ -47,7 +52,7 @@ export default function ExtractedDrugsTable({ uploadedImage, extractedDrugs }) {
               ))}
             </div>
           </div>
-          <div className="mt-3 text-xs text-gray-400 italic">⚡ Extracted using Anthropic Vision API with medical NLP</div>
+          <div className="mt-3 text-xs text-gray-400 italic">⚡ Extracted using Gemini Vision API with medical NLP</div>
         </div>
       </div>
     </div>
