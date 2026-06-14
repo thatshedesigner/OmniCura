@@ -1,4 +1,5 @@
 import { systemPrompt } from './systemPrompt.js'
+import { buildDiseaseContextPrompt } from './diseaseContext.js'
 
 const GEMINI_ENDPOINT =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
@@ -129,6 +130,9 @@ export function parseAssessmentResponse(rawResponse) {
 
 export async function assessPatient(payload, apiKey) {
   const patientProfile = requirePatientProfile(payload)
+  const contextualSystemPrompt = `${systemPrompt}
+
+${buildDiseaseContextPrompt(patientProfile.district, patientProfile.month)}`
 
   if (!apiKey) {
     const error = new Error('GEMINI_KEY is not configured')
@@ -146,7 +150,7 @@ export async function assessPatient(payload, apiKey) {
       },
       body: JSON.stringify({
         systemInstruction: {
-          parts: [{ text: systemPrompt }],
+          parts: [{ text: contextualSystemPrompt }],
         },
         contents: [{
           role: 'user',
