@@ -15,6 +15,7 @@ import { AlertTriangle } from 'lucide-react'
 import { SAMPLE_EXTRACT, sampleBase64, INTERACTION_DB } from './data/prescriptionMock'
 import SessionSetup from './components/SessionSetup'
 import { useSession } from './context/SessionContext'
+import SymptomIntake from './components/SymptomIntake'
 
 export default function App() {
   const { sessionStarted } = useSession()
@@ -31,6 +32,7 @@ export default function App() {
   const [interactions, setInteractions] = useState([])
   const [expandedInteraction, setExpandedInteraction] = useState(null)
   const [prescriptionError, setPrescriptionError] = useState(null)
+  const [patientProfile, setPatientProfile] = useState(null)
 
   useEffect(() => {
     let interval
@@ -171,6 +173,10 @@ export default function App() {
 
   if (!sessionStarted) {
     return <SessionSetup />
+  }
+
+  if (!patientProfile) {
+    return <SymptomIntake onSubmit={setPatientProfile} />
   }
 
   return (
