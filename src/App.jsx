@@ -16,9 +16,10 @@ import { SAMPLE_EXTRACT, sampleBase64, INTERACTION_DB } from './data/prescriptio
 import SessionSetup from './components/SessionSetup'
 import { useSession } from './context/SessionContext'
 import SymptomIntake from './components/SymptomIntake'
+import PatientAssessment from './components/PatientAssessment'
 
 export default function App() {
-  const { sessionStarted } = useSession()
+  const { sessionStarted, district, month, inventory } = useSession()
   const [query, setQuery] = useState('')
   const [phase, setPhase] = useState('idle') // idle | analyzing | results
   const [agentsCompleted, setAgentsCompleted] = useState(0)
@@ -33,6 +34,9 @@ export default function App() {
   const [expandedInteraction, setExpandedInteraction] = useState(null)
   const [prescriptionError, setPrescriptionError] = useState(null)
   const [patientProfile, setPatientProfile] = useState(null)
+  const [patientAssessment, setPatientAssessment] = useState(null)
+  const [assessmentLoading, setAssessmentLoading] = useState(false)
+  const [assessmentError, setAssessmentError] = useState(null)
 
   useEffect(() => {
     let interval
@@ -171,20 +175,78 @@ export default function App() {
     }
   }
 
+  const assessPatient = async (profile) => {
+    setPatientProfile(profile)
+    setPatientAssessment(null)
+    setAssessmentError(null)
+    setAssessmentLoading(true)
+
+    try {
+      const response = await fetch('/api/assess', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientProfile: profile,
+          session: { district, month, inventory },
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Assessment could not be completed')
+      }
+      setPatientAssessment(data)
+    } catch (error) {
+      console.error('Patient assessment failed:', error)
+      setAssessmentError('The assessment could not be completed. Refer if the patient looks seriously ill.')
+    } finally {
+      setAssessmentLoading(false)
+    }
+  }
+
   if (!sessionStarted) {
     return <SessionSetup />
   }
 
   if (!patientProfile) {
-    return <SymptomIntake onSubmit={setPatientProfile} />
+    return <SymptomIntake onSubmit={assessPatient} />
+  }
+
+  if (!patientAssessment || assessmentLoading || assessmentError) {
+    return (
+      <PatientAssessment
+        assessment={patientAssessment}
+        loading={assessmentLoading}
+        error={assessmentError}
+        onRetry={() => assessPatient(patientProfile)}
+        onNewPatient={() => {
+          setPatientProfile(null)
+          setPatientAssessment(null)
+          setAssessmentError(null)
+        }}
+      />
+    )
   }
 
   return (
-    <div className="min-h-screen">
-      <Navbar />
-      <ModeSwitcher mode={mode} setMode={setMode} />
+    <PatientAssessment
+      assessment={patientAssessment}
+      loading={false}
+      error={null}
+      onRetry={() => assessPatient(patientProfile)}
+      onNewPatient={() => {
+        setPatientProfile(null)
+        setPatientAssessment(null)
+        setAssessmentError(null)
+      }}
+    />
+  )
 
-      {mode === 'repurposing' && (
+  return (
+      <div className="min-h-screen">
+        <Navbar />
+        <ModeSwitcher mode={mode} setMode={setMode} />
+
+        {mode === 'repurposing' && (
         <>
           {phase === 'idle' && (
             <SearchLanding query={query} setQuery={setQuery} onSubmit={startAnalysis} />
