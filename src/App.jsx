@@ -307,38 +307,6 @@ export default function App() {
         </div>
       )}
 
-      {phase === 'idle' && (
-        <SearchLanding query={query} setQuery={setQuery} onSubmit={startAnalysis} />
-      )}
-
-      {phase === 'analyzing' && (
-        <div>
-          <div className="pt-24 px-6 max-w-6xl mx-auto">
-            <div className="flex items-center gap-3">
-              <div className="relative w-[700px] max-w-full">
-                <input value={query} readOnly className="w-full rounded-xl border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm" />
-              </div>
-              <button className="bg-[#3b82f6] text-white px-6 py-3 rounded-xl font-semibold opacity-75 cursor-not-allowed">Analyzing...</button>
-            </div>
-          </div>
-          <AgentPipeline query={query} agentsCompleted={agentsCompleted} setAgentsCompleted={setAgentsCompleted} onComplete={handleComplete} />
-        </div>
-      )}
-
-      {phase === 'results' && (
-        <div>
-          <div className="pt-24 px-6 max-w-6xl mx-auto">
-            <div className="flex items-center gap-3">
-              <div className="relative w-[700px] max-w-full">
-                <input value={query} readOnly className="w-full rounded-xl border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm" />
-              </div>
-              <button onClick={() => { setPhase('analyzing'); setAgentsCompleted(0) }} className="bg-[#3b82f6] hover:bg-[#2563eb] text-white px-6 py-3 rounded-xl font-semibold">Analyze</button>
-            </div>
-          </div>
-          <ResultsPage query={query} onDownload={handleDownload} />
-        </div>
-      )}
-
       {/* Toast */}
       {showToast && (
         <div className="fixed bottom-6 right-6 z-50 w-72">
