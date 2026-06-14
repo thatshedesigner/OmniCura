@@ -8,7 +8,7 @@ export default async function handler(req, res) {
 
   try {
     const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
-    const result = await assessPatient(payload, process.env.ANTHROPIC_API_KEY)
+    const result = await assessPatient(payload, process.env.GEMINI_KEY)
     return res.status(200).json(result)
   } catch (error) {
     console.error('Patient assessment failed:', error)

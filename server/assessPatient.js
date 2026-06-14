@@ -1,6 +1,7 @@
 import { systemPrompt } from './systemPrompt.js'
 
-const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages'
+const GEMINI_ENDPOINT =
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 const STEP_PATTERN = /STEP\s+([1-5])\s+[^A-Za-z0-9\n]{1,12}([^:\n]+):?\s*/gi
 const TEMPORARY_UNAVAILABLE =
   'Assessment system temporarily unavailable. If emergency, refer to PHC immediately.'
@@ -130,7 +131,7 @@ export async function assessPatient(payload, apiKey) {
   const patientProfile = requirePatientProfile(payload)
 
   if (!apiKey) {
-    const error = new Error('ANTHROPIC_API_KEY is not configured')
+    const error = new Error('GEMINI_KEY is not configured')
     error.status = 503
     error.publicMessage = TEMPORARY_UNAVAILABLE
     throw error
@@ -138,22 +139,23 @@ export async function assessPatient(payload, apiKey) {
 
   let response
   try {
-    response = await fetch(ANTHROPIC_ENDPOINT, {
+    response = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
       method: 'POST',
       headers: {
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        system: systemPrompt,
-        messages: [{
+        systemInstruction: {
+          parts: [{ text: systemPrompt }],
+        },
+        contents: [{
           role: 'user',
-          content: buildPatientMessage(patientProfile),
+          parts: [{ text: buildPatientMessage(patientProfile) }],
         }],
-        max_tokens: 2000,
-        temperature: 0,
+        generationConfig: {
+          maxOutputTokens: 2000,
+          temperature: 0,
+        },
       }),
     })
   } catch (error) {
@@ -165,22 +167,22 @@ export async function assessPatient(payload, apiKey) {
 
   const responseText = await response.text()
   if (!response.ok) {
-    const error = new Error(`Anthropic API returned ${response.status}`)
+    const error = new Error(`Gemini API returned ${response.status}`)
     error.status = 503
     error.publicMessage = TEMPORARY_UNAVAILABLE
     error.responseBody = responseText
     throw error
   }
 
-  const anthropicResponse = JSON.parse(responseText)
-  const rawResponse = anthropicResponse?.content
-    ?.filter((block) => block.type === 'text')
-    .map((block) => block.text)
+  const geminiResponse = JSON.parse(responseText)
+  const rawResponse = geminiResponse?.candidates?.[0]?.content?.parts
+    ?.map((part) => part.text)
+    .filter(Boolean)
     .join('\n')
     .trim()
 
   if (!rawResponse) {
-    const error = new Error('Anthropic returned no assessment text')
+    const error = new Error('Gemini returned no assessment text')
     error.status = 503
     error.publicMessage = TEMPORARY_UNAVAILABLE
     throw error
