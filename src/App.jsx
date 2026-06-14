@@ -19,6 +19,7 @@ import SymptomIntake from './components/SymptomIntake'
 import PatientAssessment from './components/PatientAssessment'
 import AuditTrail from './components/AuditTrail'
 import CHWNavigation from './components/CHWNavigation'
+import { saveAuditLog } from './utils/auditLogger'
 
 export default function App() {
   const { sessionStarted, district, month, inventory } = useSession()
@@ -223,15 +224,16 @@ export default function App() {
         throw new Error(data.error || 'Assessment could not be completed')
       }
       setPatientAssessment(data)
-      fetch('/api/logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patientProfile: normalizedProfile,
-          assessment: data,
-        }),
-      }).catch((logError) => {
-        console.error('Assessment logging failed:', logError)
+      saveAuditLog({
+        district,
+        patientSummary: {
+          age: `${normalizedProfile.age.value} ${normalizedProfile.age.unit}`,
+          sex: normalizedProfile.sex,
+          symptoms: normalizedProfile.symptoms,
+        },
+        escalationDecision: data.escalationDecision,
+        escalationJustification: data.escalationJustification,
+        differentialSummary: data.differential,
       })
     } catch (error) {
       console.error('Patient assessment failed:', error)

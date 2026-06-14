@@ -5,8 +5,10 @@ import {
   ClipboardList,
   MapPin,
   ShieldCheck,
+  Trash2,
   Users,
 } from 'lucide-react'
+import { clearAuditLogs, getAuditLogs } from '../utils/auditLogger'
 
 function relativeTime(timestamp, now) {
   const elapsedSeconds = Math.max(0, Math.floor((now - new Date(timestamp).getTime()) / 1000))
@@ -48,31 +50,20 @@ function StatCard({ icon, label, value, detail }) {
 }
 
 export default function AuditTrail({ onNewPatient }) {
-  const [logs, setLogs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [logs, setLogs] = useState(() => getAuditLogs())
   const [expandedId, setExpandedId] = useState(null)
   const [now, setNow] = useState(Date.now())
 
   useEffect(() => {
-    const loadLogs = async () => {
-      try {
-        const response = await fetch('/api/logs')
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.error || 'Audit trail could not be loaded')
-        setLogs(Array.isArray(data) ? data : [])
-      } catch (loadError) {
-        console.error('Audit trail loading failed:', loadError)
-        setError('The audit trail could not be loaded right now.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadLogs()
     const clock = window.setInterval(() => setNow(Date.now()), 60000)
     return () => window.clearInterval(clock)
   }, [])
+
+  const handleClearLogs = () => {
+    clearAuditLogs()
+    setLogs([])
+    setExpandedId(null)
+  }
 
   const todayLogs = useMemo(() => logs.filter((entry) => isToday(entry.timestamp)), [logs])
   const escalationCount = todayLogs.filter(
@@ -96,9 +87,20 @@ export default function AuditTrail({ onNewPatient }) {
               Every completed agent assessment is timestamped and reviewable.
             </p>
           </div>
-          <div className="flex items-center gap-2 text-sm text-teal-100/60">
-            <ShieldCheck size={17} />
-            Logged, traceable, reviewable
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-sm text-teal-100/60">
+              <ShieldCheck size={17} />
+              Logged, traceable, reviewable
+            </div>
+            <button
+              type="button"
+              onClick={handleClearLogs}
+              disabled={logs.length === 0}
+              className="flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-sm font-semibold text-red-200 transition hover:bg-red-400/20 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Trash2 size={16} />
+              Clear All Logs
+            </button>
           </div>
         </header>
 
@@ -124,25 +126,10 @@ export default function AuditTrail({ onNewPatient }) {
         <section className="mt-7">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-bold">Assessment log</h2>
-            {!loading && !error && (
-              <span className="text-sm text-slate-500">{logs.length} total records</span>
-            )}
+            <span className="text-sm text-slate-500">{logs.length} total records</span>
           </div>
 
-          {loading && (
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-10 text-center backdrop-blur-md">
-              <ClipboardList className="mx-auto animate-pulse text-teal-300" size={34} />
-              <p className="mt-4 text-slate-300">Loading recorded decisions...</p>
-            </div>
-          )}
-
-          {error && (
-            <div className="rounded-3xl border border-red-400/20 bg-red-400/10 p-6 text-red-100">
-              {error}
-            </div>
-          )}
-
-          {!loading && !error && logs.length === 0 && (
+          {logs.length === 0 && (
             <div className="rounded-3xl border border-white/10 bg-white/5 p-10 text-center backdrop-blur-md">
               <Users className="mx-auto text-slate-500" size={42} />
               <h3 className="mt-4 text-xl font-bold">No assessments recorded yet.</h3>
@@ -157,7 +144,7 @@ export default function AuditTrail({ onNewPatient }) {
             </div>
           )}
 
-          {!loading && !error && logs.length > 0 && (
+          {logs.length > 0 && (
             <div className="space-y-3">
               {logs.map((entry) => {
                 const expanded = expandedId === entry.id
