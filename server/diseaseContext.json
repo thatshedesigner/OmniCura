@@ -1,0 +1,224 @@
+{
+  "districts": {
+    "Koraput": {
+      "state": "Odisha",
+      "endemic": ["Malaria (P. falciparum predominant; P. vivax also occurs)", "TB", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia"],
+      "seasonal": {
+        "monsoon": ["Malaria", "Diarrheal diseases", "Dengue", "Chikungunya", "Leptospirosis", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Malaria", "Dengue", "Chikungunya", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid", "Skin infections"]
+      },
+      "high_burden": ["Malaria", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia", "TB"]
+    },
+    "Kandhamal": {
+      "state": "Odisha",
+      "endemic": ["Malaria (P. falciparum predominant; P. vivax also occurs)", "TB", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia"],
+      "seasonal": {
+        "monsoon": ["Malaria", "Diarrheal diseases", "Dengue", "Chikungunya", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Malaria", "Dengue", "Chikungunya", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid", "Skin infections"]
+      },
+      "high_burden": ["Malaria", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia", "TB"]
+    },
+    "Sitapur": {
+      "state": "Uttar Pradesh",
+      "endemic": ["TB", "Malnutrition (SAM/MAM)", "Anaemia", "Diarrheal diseases"],
+      "seasonal": {
+        "monsoon": ["Malaria (P. vivax and P. falciparum)", "Diarrheal diseases", "Dengue", "Japanese Encephalitis", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Dengue", "Malaria", "Japanese Encephalitis", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid"]
+      },
+      "high_burden": ["TB", "Anaemia", "Malnutrition (SAM/MAM)", "ARI/Pneumonia"]
+    },
+    "Bahraich": {
+      "state": "Uttar Pradesh",
+      "endemic": ["TB", "Malnutrition (SAM/MAM)", "Anaemia", "Diarrheal diseases"],
+      "seasonal": {
+        "monsoon": ["Japanese Encephalitis", "Malaria (P. vivax and P. falciparum)", "Diarrheal diseases", "Dengue", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Japanese Encephalitis", "Dengue", "Malaria", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid"]
+      },
+      "high_burden": ["Malnutrition (SAM/MAM)", "Anaemia", "ARI/Pneumonia", "TB", "Japanese Encephalitis"]
+    },
+    "Gaya": {
+      "state": "Bihar",
+      "endemic": ["TB", "Malnutrition (SAM/MAM)", "Anaemia", "Diarrheal diseases"],
+      "seasonal": {
+        "monsoon": ["Diarrheal diseases", "Malaria", "Dengue", "Japanese Encephalitis", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Dengue", "Japanese Encephalitis", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid"]
+      },
+      "high_burden": ["TB", "Malnutrition (SAM/MAM)", "Anaemia", "ARI/Pneumonia"]
+    },
+    "Purnea": {
+      "state": "Bihar",
+      "endemic": ["Kala-azar (Visceral Leishmaniasis)", "TB", "Malnutrition (SAM/MAM)", "Anaemia", "Diarrheal diseases"],
+      "seasonal": {
+        "monsoon": ["Diarrheal diseases", "Malaria", "Dengue", "Japanese Encephalitis", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Dengue", "Japanese Encephalitis", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB", "Kala-azar (Visceral Leishmaniasis)"],
+        "summer": ["Diarrheal diseases", "Typhoid", "Kala-azar (Visceral Leishmaniasis)"]
+      },
+      "high_burden": ["Kala-azar (Visceral Leishmaniasis)", "Malnutrition (SAM/MAM)", "Anaemia", "TB"]
+    },
+    "Korba": {
+      "state": "Chhattisgarh",
+      "endemic": ["Malaria (P. falciparum predominant; P. vivax also occurs)", "TB", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia"],
+      "seasonal": {
+        "monsoon": ["Malaria", "Diarrheal diseases", "Dengue", "Chikungunya", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Malaria", "Dengue", "Chikungunya", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid"]
+      },
+      "high_burden": ["Malaria", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia", "TB"]
+    },
+    "Bastar": {
+      "state": "Chhattisgarh",
+      "endemic": ["Malaria (P. falciparum predominant; P. vivax also occurs)", "TB", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia"],
+      "seasonal": {
+        "monsoon": ["Malaria", "Diarrheal diseases", "Dengue", "Chikungunya", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Malaria", "Dengue", "Chikungunya", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid", "Skin infections"]
+      },
+      "high_burden": ["Malaria", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia", "TB"]
+    },
+    "Barmer": {
+      "state": "Rajasthan",
+      "endemic": ["TB", "Anaemia", "Malnutrition (SAM/MAM)"],
+      "seasonal": {
+        "monsoon": ["Malaria (P. vivax predominant)", "Dengue", "Diarrheal diseases", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Malaria", "Dengue", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid", "Skin infections"]
+      },
+      "high_burden": ["TB", "Anaemia", "Malnutrition (SAM/MAM)"]
+    },
+    "Dungarpur": {
+      "state": "Rajasthan",
+      "endemic": ["Malaria (P. vivax and P. falciparum)", "TB", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia"],
+      "seasonal": {
+        "monsoon": ["Malaria", "Dengue", "Chikungunya", "Diarrheal diseases", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Malaria", "Dengue", "Chikungunya", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid"]
+      },
+      "high_burden": ["Malnutrition (SAM/MAM)", "Anaemia", "Sickle cell disease", "Malaria", "TB"]
+    },
+    "Shivpuri": {
+      "state": "Madhya Pradesh",
+      "endemic": ["Malaria (P. vivax and P. falciparum)", "TB", "Malnutrition (SAM/MAM)", "Anaemia"],
+      "seasonal": {
+        "monsoon": ["Malaria", "Dengue", "Chikungunya", "Diarrheal diseases", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Malaria", "Dengue", "Chikungunya", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid"]
+      },
+      "high_burden": ["Malaria", "TB", "Malnutrition (SAM/MAM)", "Anaemia"]
+    },
+    "Sidhi": {
+      "state": "Madhya Pradesh",
+      "endemic": ["Malaria (P. falciparum and P. vivax)", "TB", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia"],
+      "seasonal": {
+        "monsoon": ["Malaria", "Dengue", "Chikungunya", "Diarrheal diseases", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Malaria", "Dengue", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid"]
+      },
+      "high_burden": ["Malnutrition (SAM/MAM)", "Anaemia", "Malaria", "Sickle cell disease", "TB"]
+    },
+    "Pakur": {
+      "state": "Jharkhand",
+      "endemic": ["Kala-azar (Visceral Leishmaniasis)", "Malaria (P. falciparum and P. vivax)", "TB", "Malnutrition (SAM/MAM)", "Anaemia"],
+      "seasonal": {
+        "monsoon": ["Malaria", "Diarrheal diseases", "Dengue", "Japanese Encephalitis", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Malaria", "Dengue", "Japanese Encephalitis", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB", "Kala-azar (Visceral Leishmaniasis)"],
+        "summer": ["Diarrheal diseases", "Typhoid", "Kala-azar (Visceral Leishmaniasis)"]
+      },
+      "high_burden": ["Kala-azar (Visceral Leishmaniasis)", "Malnutrition (SAM/MAM)", "Anaemia", "Malaria", "TB"]
+    },
+    "Khunti": {
+      "state": "Jharkhand",
+      "endemic": ["Malaria (P. falciparum and P. vivax)", "TB", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia"],
+      "seasonal": {
+        "monsoon": ["Malaria", "Diarrheal diseases", "Dengue", "Chikungunya", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Malaria", "Dengue", "Chikungunya", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid"]
+      },
+      "high_burden": ["Malaria", "Malnutrition (SAM/MAM)", "Anaemia", "Sickle cell disease", "TB"]
+    },
+    "Nandurbar": {
+      "state": "Maharashtra",
+      "endemic": ["Malaria (P. falciparum and P. vivax)", "TB", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia"],
+      "seasonal": {
+        "monsoon": ["Malaria", "Dengue", "Chikungunya", "Diarrheal diseases", "Leptospirosis", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Malaria", "Dengue", "Chikungunya", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid"]
+      },
+      "high_burden": ["Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia", "Malaria", "TB"]
+    },
+    "Gadchiroli": {
+      "state": "Maharashtra",
+      "endemic": ["Malaria (P. falciparum predominant; P. vivax also occurs)", "TB", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia"],
+      "seasonal": {
+        "monsoon": ["Malaria", "Dengue", "Chikungunya", "Diarrheal diseases", "Leptospirosis", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Malaria", "Dengue", "Chikungunya", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid"]
+      },
+      "high_burden": ["Malaria", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia", "TB"]
+    },
+    "Mewat": {
+      "state": "Haryana",
+      "endemic": ["TB", "Malnutrition (SAM/MAM)", "Anaemia", "Diarrheal diseases"],
+      "seasonal": {
+        "monsoon": ["Malaria (P. vivax predominant)", "Dengue", "Chikungunya", "Diarrheal diseases", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Dengue", "Malaria", "Chikungunya", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid"]
+      },
+      "high_burden": ["TB", "Malnutrition (SAM/MAM)", "Anaemia", "ARI/Pneumonia"]
+    },
+    "Banswara": {
+      "state": "Rajasthan",
+      "endemic": ["Malaria (P. vivax and P. falciparum)", "TB", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia"],
+      "seasonal": {
+        "monsoon": ["Malaria", "Dengue", "Chikungunya", "Diarrheal diseases", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Malaria", "Dengue", "Chikungunya", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid"]
+      },
+      "high_burden": ["Malnutrition (SAM/MAM)", "Anaemia", "Sickle cell disease", "Malaria", "TB"]
+    },
+    "Supaul": {
+      "state": "Bihar",
+      "endemic": ["Kala-azar (Visceral Leishmaniasis)", "TB", "Malnutrition (SAM/MAM)", "Anaemia", "Diarrheal diseases"],
+      "seasonal": {
+        "monsoon": ["Diarrheal diseases", "Malaria", "Dengue", "Japanese Encephalitis", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Dengue", "Japanese Encephalitis", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB", "Kala-azar (Visceral Leishmaniasis)"],
+        "summer": ["Diarrheal diseases", "Typhoid", "Kala-azar (Visceral Leishmaniasis)"]
+      },
+      "high_burden": ["Kala-azar (Visceral Leishmaniasis)", "Malnutrition (SAM/MAM)", "Anaemia", "TB"]
+    },
+    "Nabarangpur": {
+      "state": "Odisha",
+      "endemic": ["Malaria (P. falciparum predominant; P. vivax also occurs)", "TB", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia"],
+      "seasonal": {
+        "monsoon": ["Malaria", "Diarrheal diseases", "Dengue", "Chikungunya", "Leptospirosis", "Snakebite", "Skin infections"],
+        "post_monsoon": ["Malaria", "Dengue", "Chikungunya", "Typhoid", "Conjunctivitis"],
+        "winter": ["ARI/Pneumonia", "TB"],
+        "summer": ["Diarrheal diseases", "Typhoid", "Skin infections"]
+      },
+      "high_burden": ["Malaria", "Sickle cell disease", "Malnutrition (SAM/MAM)", "Anaemia", "TB"]
+    }
+  }
+}
