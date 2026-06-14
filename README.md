@@ -56,9 +56,7 @@ The system checks WHO IMCI danger signs first. It then weighs the patient's symp
 - Tailwind CSS
 - Vercel
 
-## Demo
-
-[Video demo](demo-link)
+## Application
 
 Live application: [omnicura.vercel.app](https://omnicura.vercel.app)
 
