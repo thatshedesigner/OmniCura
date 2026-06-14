@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { analyzePrescriptionImage } from './server/analyzePrescription.js'
 
 const MAX_REQUEST_BYTES = 15 * 1024 * 1024
 
@@ -29,50 +30,11 @@ function anthropicApiPlugin(apiKey) {
       }
 
       const requestBody = Buffer.concat(chunks).toString('utf8')
-      const parsedBody = JSON.parse(requestBody)
-      const imageSource = parsedBody?.messages?.[0]?.content?.find(
-        (block) => block.type === 'image'
-      )?.source
+      const result = await analyzePrescriptionImage(JSON.parse(requestBody), apiKey)
 
-      if (
-        imageSource?.type !== 'base64' ||
-        typeof imageSource.data !== 'string' ||
-        imageSource.data.length === 0
-      ) {
-        const error = new Error('Anthropic request is missing base64 image data')
-        error.status = 400
-        throw error
-      }
-
-      console.log('Sending prescription image to Anthropic', {
-        mediaType: imageSource.media_type,
-        base64Length: imageSource.data.length,
-      })
-
-      const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-          'x-api-key': apiKey,
-        },
-        body: requestBody,
-      })
-
-      const responseText = await anthropicResponse.text()
-
-      if (!anthropicResponse.ok) {
-        const error = new Error(
-          `Anthropic API returned ${anthropicResponse.status} ${anthropicResponse.statusText}`
-        )
-        error.status = anthropicResponse.status
-        error.responseBody = responseText
-        throw error
-      }
-
-      res.statusCode = anthropicResponse.status
+      res.statusCode = 200
       res.setHeader('Content-Type', 'application/json')
-      res.end(responseText)
+      res.end(JSON.stringify(result))
     } catch (error) {
       console.error('Anthropic prescription analysis failed:', error)
       if (error.responseBody) {
@@ -103,6 +65,9 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
-    plugins: [react(), anthropicApiPlugin(env.ANTHROPIC_API_KEY)],
+    plugins: [
+      react(),
+      anthropicApiPlugin(env.ANTHROPIC_API_KEY || env.VITE_ANTHROPIC_API_KEY),
+    ],
   }
 })
