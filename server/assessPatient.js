@@ -116,10 +116,17 @@ function parseEscalation(step5) {
 export function parseAssessmentResponse(rawResponse) {
   const sections = splitStepSections(rawResponse)
   const escalation = parseEscalation(sections[5])
+  const dangerSignCheck = sections[1]
+  const dangerSignsExplicitlyAbsent =
+    /\bno\b.{0,25}\bdanger signs?\b|\bdanger signs?\b.{0,25}\b(?:absent|not present|none)\b/i
+      .test(dangerSignCheck)
+  const dangerSignsExplicitlyPresent =
+    /ESCALATE IMMEDIATELY|\bdanger signs?\b.{0,35}\b(?:present|identified|found)\b/i
+      .test(dangerSignCheck)
 
   return {
-    dangerSignCheck: sections[1],
-    isDangerSignPresent: /ESCALATE IMMEDIATELY/i.test(sections[1]),
+    dangerSignCheck,
+    isDangerSignPresent: dangerSignsExplicitlyPresent && !dangerSignsExplicitlyAbsent,
     differential: sections[2],
     recommendedAction: sections[3],
     monitoringPlan: sections[4],
