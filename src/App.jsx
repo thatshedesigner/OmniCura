@@ -221,7 +221,7 @@ export default function App() {
       })
       const data = await response.json()
       if (!response.ok) {
-        throw new Error(data.error || 'Assessment could not be completed')
+        throw new Error(data.message || data.error || 'Assessment could not be completed')
       }
       setPatientAssessment(data)
       saveAuditLog({
@@ -237,7 +237,9 @@ export default function App() {
       })
     } catch (error) {
       console.error('Patient assessment failed:', error)
-      setAssessmentError('The assessment could not be completed. Refer if the patient looks seriously ill.')
+      setAssessmentError(
+        error.message || 'The assessment could not be completed. Refer if the patient looks seriously ill.'
+      )
     } finally {
       setAssessmentLoading(false)
     }

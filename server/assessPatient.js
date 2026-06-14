@@ -141,68 +141,82 @@ ${buildDiseaseContextPrompt(patientProfile.district, patientProfile.month)}`
     throw error
   }
 
-  let response
-  try {
-    response = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: contextualSystemPrompt }],
-        },
-        contents: [{
-          role: 'user',
-          parts: [{ text: buildPatientMessage(patientProfile) }],
-        }],
-        generationConfig: {
-          maxOutputTokens: 2000,
-          temperature: 0,
-        },
-      }),
-    })
-  } catch (error) {
-    const serviceError = new Error(error.message)
-    serviceError.status = 503
-    serviceError.publicMessage = TEMPORARY_UNAVAILABLE
-    throw serviceError
-  }
-
-  const responseText = await response.text()
-  if (!response.ok) {
-    let upstreamMessage
+  const requestAssessment = async () => {
+    let response
     try {
-      upstreamMessage = JSON.parse(responseText)?.error?.message
-    } catch {
-      upstreamMessage = null
+      response = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: contextualSystemPrompt }],
+          },
+          contents: [{
+            role: 'user',
+            parts: [{ text: buildPatientMessage(patientProfile) }],
+          }],
+          generationConfig: {
+            maxOutputTokens: 4096,
+            temperature: 0,
+          },
+        }),
+      })
+    } catch (error) {
+      const serviceError = new Error(error.message)
+      serviceError.status = 503
+      serviceError.publicMessage = TEMPORARY_UNAVAILABLE
+      throw serviceError
     }
 
-    const error = new Error(
-      upstreamMessage || `Gemini API returned ${response.status} ${response.statusText}`
-    )
-    error.status = 503
-    error.publicMessage = TEMPORARY_UNAVAILABLE
-    error.responseBody = responseText
-    error.response = responseText
-    throw error
+    const responseText = await response.text()
+    if (!response.ok) {
+      let upstreamMessage
+      try {
+        upstreamMessage = JSON.parse(responseText)?.error?.message
+      } catch {
+        upstreamMessage = null
+      }
+
+      const error = new Error(
+        upstreamMessage || `Gemini API returned ${response.status} ${response.statusText}`
+      )
+      error.status = 503
+      error.publicMessage = TEMPORARY_UNAVAILABLE
+      error.responseBody = responseText
+      error.response = responseText
+      throw error
+    }
+
+    const geminiResponse = JSON.parse(responseText)
+    const candidate = geminiResponse?.candidates?.[0]
+    const rawResponse = candidate?.content?.parts
+      ?.map((part) => part.text)
+      .filter(Boolean)
+      .join('\n')
+      .trim()
+
+    if (!rawResponse) {
+      const error = new Error(
+        `Gemini returned no assessment text${candidate?.finishReason ? ` (${candidate.finishReason})` : ''}`
+      )
+      error.status = 503
+      error.publicMessage = TEMPORARY_UNAVAILABLE
+      throw error
+    }
+
+    return rawResponse
   }
 
-  const geminiResponse = JSON.parse(responseText)
-  const rawResponse = geminiResponse?.candidates?.[0]?.content?.parts
-    ?.map((part) => part.text)
-    .filter(Boolean)
-    .join('\n')
-    .trim()
-
-  if (!rawResponse) {
-    const error = new Error('Gemini returned no assessment text')
-    error.status = 503
-    error.publicMessage = TEMPORARY_UNAVAILABLE
-    throw error
+  let rawResponse = await requestAssessment()
+  try {
+    return parseAssessmentResponse(rawResponse)
+  } catch (parseError) {
+    console.warn('Gemini assessment format was incomplete; retrying once:', parseError.message)
+    rawResponse = await requestAssessment()
+    return parseAssessmentResponse(rawResponse)
   }
-
-  return parseAssessmentResponse(rawResponse)
 }
 
 export { TEMPORARY_UNAVAILABLE }
