@@ -140,7 +140,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       geminiApiPlugin(env.GEMINI_KEY),
-      patientAssessmentPlugin(env.ANTHROPIC_API_KEY),
+      patientAssessmentPlugin(env.GEMINI_KEY),
       assessmentLogPlugin(),
     ],
   }
