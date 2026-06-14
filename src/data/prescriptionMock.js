@@ -1,16 +1,19 @@
-export const sampleBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII='
+// Real prescription image from assets
+import realPrescriptionImage from '../assets/real-prescription.png'
+
+export const sampleBase64 = realPrescriptionImage
 
 export const SAMPLE_EXTRACT = {
   drugs: [
-    { name: 'Metformin', dosage: '500mg', frequency: 'Twice daily', confidence: 97 },
-    { name: 'Warfarin', dosage: '5mg', frequency: 'Once daily', confidence: 94 },
-    { name: 'Aspirin', dosage: '100mg', frequency: 'Once daily', confidence: 91 },
-    { name: 'Omeprazole', dosage: '20mg', frequency: 'Before meals', confidence: 88 },
-    { name: 'Ibuprofen', dosage: '400mg', frequency: 'As needed', confidence: 85 },
+    { name: 'Cefoxitin', dosage: '1-1mg/kg', frequency: 'As prescribed', confidence: 94 },
+    { name: 'Albuterol', dosage: '5P', frequency: 'Inhalation', confidence: 91 },
+    { name: 'Amoxicillin', dosage: 'As prescribed', frequency: 'Daily', confidence: 89 },
+    { name: 'Aspirin', dosage: 'Per dosage', frequency: 'Daily', confidence: 88 },
+    { name: 'Clopin-D', dosage: 'As needed', frequency: 'Symptomatic relief', confidence: 85 },
   ],
-  prescriber: 'Dr. Sample',
-  date: null,
-  rawText: 'Sample OCR text for prescription image.'
+  prescriber: 'Dr. Sachin Patil',
+  date: '20/05/2025',
+  rawText: 'Prescription from Sai Ram Clinic - Patient: Mr. Aman, Age: 19 years'
 }
 
 export const INTERACTION_DB = [

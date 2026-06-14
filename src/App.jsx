@@ -80,8 +80,14 @@ export default function App() {
   const analyzePrescription = async (base64Image, mediaType) => {
     try {
       const ANTHROPIC_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
+      
+      console.log('=== PRESCRIPTION ANALYSIS START ===')
+      console.log('API Key present:', !!ANTHROPIC_KEY)
+      console.log('Image base64 length:', base64Image?.length)
+      console.log('Media type:', mediaType)
+      
       if (!ANTHROPIC_KEY) {
-        // warn and fallback
+        console.warn('No API key found')
         setPrescriptionWarning('Anthropic API key not found. Using sample data for demonstration.')
         return SAMPLE_EXTRACT
       }
@@ -92,19 +98,53 @@ export default function App() {
         messages: [{ role: 'user', content: [ { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Image } }, { type: 'text', text: `You are a medical OCR and NLP system. Analyze this handwritten prescription image. Extract ALL drug names, dosages, and frequencies. Return ONLY a JSON object in this exact format:\n{ "drugs": [ { "name": "DrugName", "dosage": "Xmg", "frequency": "...", "confidence": 95 } ], "prescriber": "Dr. Name if visible or null", "date": "date if visible or null", "rawText": "full raw OCR text of prescription" } Do not include any text outside the JSON object.` } ] }]
       })
 
+      console.log('Sending request to API...')
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY },
         body
       })
+      
+      console.log('Response status:', response.status, response.statusText)
+      
+      if (!response.ok) {
+        const errorData = await response.text()
+        console.error('API Error Response:', errorData)
+        setPrescriptionWarning(`API Error (${response.status}): ${errorData.substring(0, 100)}. Using sample data for demonstration.`)
+        return SAMPLE_EXTRACT
+      }
+      
       const data = await response.json()
+      console.log('API Response received:', data)
+      
+      if (!data.content || data.content.length === 0) {
+        console.error('No content in API response')
+        setPrescriptionWarning('Unable to process image. Using sample data for demonstration.')
+        return SAMPLE_EXTRACT
+      }
+      
       // find text block
       const text = data?.content?.find?.(b => b.type === 'text')?.text || '{}'
+      console.log('Extracted text from response:', text)
+      
       const parsed = JSON.parse(text.replace(/```json|```/g, '').trim())
-      return parsed
+      console.log('Parsed extraction result:', parsed)
+      
+      if (parsed && parsed.drugs) {
+        console.log('=== PRESCRIPTION ANALYSIS SUCCESS ===')
+        return parsed
+      } else {
+        console.error('Invalid response format - no drugs found')
+        setPrescriptionWarning('Invalid response format. Using sample data for demonstration.')
+        return SAMPLE_EXTRACT
+      }
     } catch (e) {
-      // fallback silently to sample
-      setPrescriptionWarning('Unable to process image. Using sample data for demonstration.')
+      console.error('=== PRESCRIPTION ANALYSIS ERROR ===')
+      console.error('Error name:', e.name)
+      console.error('Error message:', e.message)
+      console.error('Error stack:', e.stack)
+      console.error('Full error object:', e)
+      setPrescriptionWarning(`Error: ${e.message}. Using sample data for demonstration.`)
       return SAMPLE_EXTRACT
     }
   }
@@ -145,6 +185,14 @@ export default function App() {
 
   const handlePrescriptionComplete = async () => {
     // perform API analyze (or fallback)
+    console.log('handlePrescriptionComplete called')
+    console.log('uploadedImage:', {
+      hasBase64: !!uploadedImage.base64,
+      base64Length: uploadedImage.base64?.length,
+      mediaType: uploadedImage.mediaType,
+      filename: uploadedImage.filename
+    })
+    
     const res = await analyzePrescription(uploadedImage.base64, uploadedImage.mediaType)
     const drugs = res.drugs || SAMPLE_EXTRACT.drugs
     setExtractedDrugs(drugs)
@@ -201,10 +249,10 @@ export default function App() {
             <div className="w-full max-w-4xl px-6">
               {prescriptionPhase === 'upload' && (
                 <UploadZone uploadedImage={uploadedImage} setUploadedImage={setUploadedImage} onUseSample={() => {
-                  // load sample
+                  // load demo prescription
                   const dataUrl = sampleBase64
                   const base64 = dataUrl.split(',')[1]
-                  setUploadedImage({ base64, mediaType: 'image/png', filename: 'sample-prescription.png', previewUrl: dataUrl, toAnalyze: true })
+                  setUploadedImage({ base64, mediaType: 'image/png', filename: 'demo-prescription.png', previewUrl: dataUrl, toAnalyze: true })
                   setPrescriptionPhase('analyzing')
                 }} />
               )}

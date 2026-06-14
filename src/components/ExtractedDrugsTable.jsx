@@ -19,7 +19,11 @@ export default function ExtractedDrugsTable({ uploadedImage, extractedDrugs }) {
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <div className="text-xs uppercase text-gray-400">Original Prescription</div>
-          <img src={uploadedImage.previewUrl} alt="prescription" className="mt-2 rounded-xl border border-gray-200 w-full object-contain max-h-64" />
+          {uploadedImage && uploadedImage.previewUrl ? (
+            <img src={uploadedImage.previewUrl} alt="prescription" className="mt-2 rounded-xl border border-gray-200 w-full object-contain max-h-64" />
+          ) : (
+            <div className="mt-2 rounded-xl border border-gray-200 w-full h-64 bg-gray-50 flex items-center justify-center text-gray-400">No image available</div>
+          )}
         </div>
         <div>
           <div className="text-xs uppercase text-gray-400">EXTRACTED MEDICATIONS</div>
