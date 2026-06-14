@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { analyzePrescriptionImage } from './server/analyzePrescription.js'
 import { assessPatient } from './server/assessPatient.js'
+import { logAssessment } from './server/assessmentLog.js'
 
 const MAX_REQUEST_BYTES = 15 * 1024 * 1024
 
@@ -93,6 +94,45 @@ function patientAssessmentPlugin(apiKey) {
   }
 }
 
+function assessmentLogPlugin() {
+  const handleRequest = async (req, res, next) => {
+    if (req.url !== '/api/log' || req.method !== 'POST') {
+      next()
+      return
+    }
+
+    try {
+      const chunks = []
+      for await (const chunk of req) chunks.push(chunk)
+      const payload = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+      if (!payload?.patientProfile || !payload?.assessment) {
+        const error = new Error('patientProfile and assessment are required')
+        error.status = 400
+        throw error
+      }
+      const filePath = await logAssessment(payload.patientProfile, payload.assessment)
+      res.statusCode = 201
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ saved: true, filePath }))
+    } catch (error) {
+      console.error('Assessment logging failed:', error)
+      res.statusCode = error.status || 500
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ error: error.message }))
+    }
+  }
+
+  return {
+    name: 'assessment-log-api',
+    configureServer(server) {
+      server.middlewares.use(handleRequest)
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(handleRequest)
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
@@ -100,7 +140,8 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       geminiApiPlugin(env.GEMINI_KEY),
-      patientAssessmentPlugin(env.GEMINI_KEY),
+      patientAssessmentPlugin(env.ANTHROPIC_API_KEY),
+      assessmentLogPlugin(),
     ],
   }
 })

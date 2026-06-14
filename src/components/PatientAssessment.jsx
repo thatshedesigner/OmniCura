@@ -1,5 +1,5 @@
 import React from 'react'
-import { AlertTriangle, CheckCircle2, ClipboardList, LoaderCircle, RotateCcw } from 'lucide-react'
+import { AlertTriangle, ClipboardList, LoaderCircle, RotateCcw } from 'lucide-react'
 
 function StepCard({ number, title, children }) {
   return (
@@ -8,24 +8,18 @@ function StepCard({ number, title, children }) {
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-400 font-bold text-[#06211f]">
           {number}
         </div>
-        <h2 className="text-lg font-bold text-white">STEP {number} — {title}</h2>
+        <h2 className="text-lg font-bold text-white">STEP {number} - {title}</h2>
       </div>
       {children}
     </section>
   )
 }
 
-function List({ items, emptyText }) {
-  if (!items?.length) return <p className="text-sm text-slate-400">{emptyText}</p>
+function ReasoningText({ children }) {
   return (
-    <ul className="space-y-2">
-      {items.map((item) => (
-        <li key={item} className="flex gap-2 text-sm text-slate-200">
-          <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-teal-300" />
-          <span>{item}</span>
-        </li>
-      ))}
-    </ul>
+    <div className="whitespace-pre-wrap text-sm leading-7 text-slate-200">
+      {children}
+    </div>
   )
 }
 
@@ -57,7 +51,7 @@ export default function PatientAssessment({ assessment, loading, error, onRetry,
     )
   }
 
-  const escalate = assessment.step5.decision === 'ESCALATE'
+  const escalate = assessment.escalationDecision === 'ESCALATE'
 
   return (
     <main className="min-h-screen bg-[#061725] px-4 py-8 text-white sm:px-6 lg:px-8">
@@ -75,80 +69,48 @@ export default function PatientAssessment({ assessment, loading, error, onRetry,
               ? 'border-red-400/50 bg-red-400/15 text-red-200'
               : 'border-teal-400/50 bg-teal-400/15 text-teal-100'
           }`}>
-            {assessment.step5.decision}
+            {assessment.escalationDecision}
           </div>
         </header>
 
         <div className="space-y-5">
           <StepCard number="1" title="DANGER SIGN CHECK">
-            {assessment.step1.present.length > 0 && (
-              <div className="mb-4 rounded-2xl border border-red-400/30 bg-red-400/10 p-4">
-                <div className="font-bold text-red-200">Danger signs present</div>
-                <List items={assessment.step1.present} />
+            {assessment.isDangerSignPresent && (
+              <div className="mb-4 rounded-2xl border border-red-400/30 bg-red-400/10 p-4 font-bold text-red-200">
+                ESCALATE IMMEDIATELY
               </div>
             )}
-            <p className="mb-3 text-sm font-semibold text-slate-200">{assessment.step1.summary}</p>
-            {assessment.step1.uncertain.length > 0 && (
-              <div className="mt-3">
-                <div className="mb-2 text-sm font-semibold text-amber-200">Not fully clear</div>
-                <List items={assessment.step1.uncertain} />
-              </div>
-            )}
-            <details className="mt-4 text-sm text-slate-400">
-              <summary className="cursor-pointer">Danger signs not reported</summary>
-              <div className="mt-3"><List items={assessment.step1.absent} /></div>
-            </details>
+            <ReasoningText>{assessment.dangerSignCheck}</ReasoningText>
           </StepCard>
 
           <StepCard number="2" title="DIFFERENTIAL">
-            <div className="grid gap-3">
-              {assessment.step2.conditions.map((condition) => (
-                <div key={condition.condition} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="font-bold text-white">{condition.condition}</div>
-                    <div className="rounded-full bg-teal-400/15 px-3 py-1 text-sm font-bold text-teal-200">
-                      {condition.confidencePercent}%
-                    </div>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-300">{condition.reasoning}</p>
-                </div>
-              ))}
-            </div>
+            <ReasoningText>{assessment.differential}</ReasoningText>
           </StepCard>
 
           <StepCard number="3" title="RECOMMENDED ACTION">
-            <List items={assessment.step3.actions} emptyText="No home action recommended." />
+            <ReasoningText>{assessment.recommendedAction}</ReasoningText>
           </StepCard>
 
           <StepCard number="4" title="MONITORING PLAN">
-            <div className="grid gap-5 md:grid-cols-2">
-              <div>
-                <div className="mb-2 font-bold text-slate-100">Watch for</div>
-                <List items={assessment.step4.watchFor} />
-              </div>
-              <div>
-                <div className="mb-2 font-bold text-red-200">Refer immediately if</div>
-                <List items={assessment.step4.referImmediatelyIf} />
-              </div>
-            </div>
+            <ReasoningText>{assessment.monitoringPlan}</ReasoningText>
           </StepCard>
 
           <StepCard number="5" title="ESCALATION DECISION">
             <div className={`rounded-2xl border p-5 ${
               escalate ? 'border-red-400/30 bg-red-400/10' : 'border-teal-400/30 bg-teal-400/10'
             }`}>
-              <div className="text-2xl font-black">{assessment.step5.decision}</div>
-              <p className="mt-2 text-slate-200">{assessment.step5.justification}</p>
+              <div className="text-2xl font-black">{assessment.escalationDecision}</div>
+              <p className="mt-2 text-slate-200">{assessment.escalationJustification}</p>
             </div>
 
-            {assessment.step5.referralNote && (
+            {assessment.referralNote && (
               <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
                 <div className="mb-3 flex items-center gap-2 font-bold text-white">
                   <ClipboardList size={19} className="text-teal-300" />
                   Referral note
                 </div>
                 <pre className="whitespace-pre-wrap font-sans text-sm leading-6 text-slate-200">
-                  {assessment.step5.referralNote}
+                  {assessment.referralNote}
                 </pre>
               </div>
             )}

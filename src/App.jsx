@@ -176,7 +176,35 @@ export default function App() {
   }
 
   const assessPatient = async (profile) => {
-    setPatientProfile(profile)
+    const normalizedProfile = {
+      age: {
+        value: profile.basics.age,
+        unit: profile.basics.ageUnit,
+      },
+      sex: profile.basics.sex,
+      pregnancy: profile.basics.pregnancyStatus === 'Possibly pregnant'
+        ? 'possible'
+        : profile.basics.pregnancyStatus === 'Confirmed pregnant'
+          ? 'confirmed'
+          : 'none',
+      symptoms: profile.symptoms,
+      vitals: {
+        temperature: profile.vitals.temperatureCelsius,
+        breathingRate: profile.vitals.breathingRatePerMinute,
+        muac: profile.vitals.muacCm,
+        pallor: profile.vitals.pallorVisible,
+        jaundice: profile.vitals.jaundiceVisible,
+      },
+      duration: profile.duration,
+      patientWords: profile.patientWords || '',
+      district,
+      month,
+      ashaKit: Object.entries(inventory)
+        .filter(([, available]) => available)
+        .map(([item]) => item),
+    }
+
+    setPatientProfile(normalizedProfile)
     setPatientAssessment(null)
     setAssessmentError(null)
     setAssessmentLoading(true)
@@ -185,16 +213,23 @@ export default function App() {
       const response = await fetch('/api/assess', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patientProfile: profile,
-          session: { district, month, inventory },
-        }),
+        body: JSON.stringify({ patientProfile: normalizedProfile }),
       })
       const data = await response.json()
       if (!response.ok) {
         throw new Error(data.error || 'Assessment could not be completed')
       }
       setPatientAssessment(data)
+      fetch('/api/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientProfile: normalizedProfile,
+          assessment: data,
+        }),
+      }).catch((logError) => {
+        console.error('Assessment logging failed:', logError)
+      })
     } catch (error) {
       console.error('Patient assessment failed:', error)
       setAssessmentError('The assessment could not be completed. Refer if the patient looks seriously ill.')
@@ -217,7 +252,28 @@ export default function App() {
         assessment={patientAssessment}
         loading={assessmentLoading}
         error={assessmentError}
-        onRetry={() => assessPatient(patientProfile)}
+        onRetry={() => assessPatient({
+          basics: {
+            age: patientProfile.age.value,
+            ageUnit: patientProfile.age.unit,
+            sex: patientProfile.sex,
+            pregnancyStatus: patientProfile.pregnancy === 'possible'
+              ? 'Possibly pregnant'
+              : patientProfile.pregnancy === 'confirmed'
+                ? 'Confirmed pregnant'
+                : null,
+          },
+          symptoms: patientProfile.symptoms,
+          vitals: {
+            temperatureCelsius: patientProfile.vitals.temperature,
+            breathingRatePerMinute: patientProfile.vitals.breathingRate,
+            muacCm: patientProfile.vitals.muac,
+            pallorVisible: patientProfile.vitals.pallor,
+            jaundiceVisible: patientProfile.vitals.jaundice,
+          },
+          duration: patientProfile.duration,
+          patientWords: patientProfile.patientWords,
+        })}
         onNewPatient={() => {
           setPatientProfile(null)
           setPatientAssessment(null)
@@ -232,7 +288,28 @@ export default function App() {
       assessment={patientAssessment}
       loading={false}
       error={null}
-      onRetry={() => assessPatient(patientProfile)}
+      onRetry={() => assessPatient({
+        basics: {
+          age: patientProfile.age.value,
+          ageUnit: patientProfile.age.unit,
+          sex: patientProfile.sex,
+          pregnancyStatus: patientProfile.pregnancy === 'possible'
+            ? 'Possibly pregnant'
+            : patientProfile.pregnancy === 'confirmed'
+              ? 'Confirmed pregnant'
+              : null,
+        },
+        symptoms: patientProfile.symptoms,
+        vitals: {
+          temperatureCelsius: patientProfile.vitals.temperature,
+          breathingRatePerMinute: patientProfile.vitals.breathingRate,
+          muacCm: patientProfile.vitals.muac,
+          pallorVisible: patientProfile.vitals.pallor,
+          jaundiceVisible: patientProfile.vitals.jaundice,
+        },
+        duration: patientProfile.duration,
+        patientWords: patientProfile.patientWords,
+      })}
       onNewPatient={() => {
         setPatientProfile(null)
         setPatientAssessment(null)
