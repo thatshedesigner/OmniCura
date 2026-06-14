@@ -13,8 +13,11 @@ import RiskScoreCircle from './components/RiskScoreCircle'
 import { mock } from './data/mockData'
 import { AlertTriangle } from 'lucide-react'
 import { SAMPLE_EXTRACT, sampleBase64, INTERACTION_DB } from './data/prescriptionMock'
+import SessionSetup from './components/SessionSetup'
+import { useSession } from './context/SessionContext'
 
 export default function App() {
+  const { sessionStarted } = useSession()
   const [query, setQuery] = useState('')
   const [phase, setPhase] = useState('idle') // idle | analyzing | results
   const [agentsCompleted, setAgentsCompleted] = useState(0)
@@ -166,6 +169,9 @@ export default function App() {
     }
   }
 
+  if (!sessionStarted) {
+    return <SessionSetup />
+  }
 
   return (
     <div className="min-h-screen">
